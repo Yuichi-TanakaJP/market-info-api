@@ -9,8 +9,8 @@ router = APIRouter(prefix="/yutai", tags=["yutai"])
 _PREFIX = "yutai/monthly"
 
 
-@router.get("/latest")
-async def get_latest() -> dict:
+@router.get("/manifest")
+async def get_manifest() -> dict:
     """manifest.json を返す。latest_month / latest_path で最新月がわかる。"""
     try:
         return await cache.get_manifest(

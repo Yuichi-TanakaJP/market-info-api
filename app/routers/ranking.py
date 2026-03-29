@@ -9,8 +9,8 @@ router = APIRouter(prefix="/ranking", tags=["ranking"])
 _PREFIX = "stock-ranking"
 
 
-@router.get("/latest")
-async def get_latest() -> dict:
+@router.get("/manifest")
+async def get_manifest() -> dict:
     """manifest.json を返す。latest フィールドで最新日付がわかる。"""
     try:
         return await cache.get_manifest(

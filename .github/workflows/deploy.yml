@@ -1,5 +1,14 @@
 name: Deploy to Railway
 
+# 必要なシークレット/env var の配置場所:
+#
+# [GitHub Actions シークレット]  ← リポジトリ Settings > Secrets and variables > Actions
+#   RAILWAY_TOKEN   : Railway のデプロイ用トークン (railway.app > Account > API Tokens)
+#
+# [Railway サービス環境変数]     ← railway.app > プロジェクト > サービス > Variables
+#   R2_PUBLIC_BASE_URL  : R2 パブリック URL (例: https://pub-xxx.r2.dev)
+#   MARKET_INFO_API_KEY : 認証キー (将来用・未設定 = 認証なし)
+
 on:
   push:
     branches: [main]
@@ -9,7 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: railwayapp/railway-deploy@v2
-        with:
-          railway-token: ${{ secrets.RAILWAY_TOKEN }}
-          service: market-info-api
+      - name: Deploy to Railway
+        run: |
+          npm install -g @railway/cli
+          railway up --service market-info-api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
