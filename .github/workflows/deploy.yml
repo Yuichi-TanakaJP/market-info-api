@@ -3,7 +3,8 @@ name: Deploy to Railway
 # 必要なシークレット/env var の配置場所:
 #
 # [GitHub Actions シークレット]  ← リポジトリ Settings > Secrets and variables > Actions
-#   RAILWAY_TOKEN   : Railway のデプロイ用トークン (railway.app > Account > API Tokens)
+#   RAILWAY_TOKEN      : Railway のデプロイ用トークン (railway.app > Account > API Tokens)
+#   RAILWAY_PROJECT_ID : Railway のプロジェクト ID (railway.app > プロジェクト > Settings > General)
 #
 # [Railway サービス環境変数]     ← railway.app > プロジェクト > サービス > Variables
 #   R2_PUBLIC_BASE_URL  : R2 パブリック URL (例: https://pub-xxx.r2.dev)
@@ -24,3 +25,4 @@ jobs:
           railway up --service market-info-api --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
