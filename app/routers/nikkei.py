@@ -10,8 +10,8 @@ _PREFIX = "nikkei-contribution"
 _MANIFEST_FILE = "nikkei_contribution_manifest.json"
 
 
-@router.get("/latest")
-async def get_latest() -> dict:
+@router.get("/manifest")
+async def get_manifest() -> dict:
     """nikkei_contribution_manifest.json を返す。latest_date で最新日付がわかる。"""
     try:
         return await cache.get_manifest(

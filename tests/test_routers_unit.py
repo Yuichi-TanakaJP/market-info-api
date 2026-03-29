@@ -30,11 +30,10 @@ def test_health(client):
     assert resp.json() == {"status": "ok"}
 
 
-def test_ranking_latest(client):
+def test_ranking_manifest(client):
     manifest = {"dates": ["2026-03-28"], "latest": "2026-03-28"}
-    with patch("app.routers.ranking.r2.fetch_json", new=AsyncMock(return_value=manifest)):
-        with patch("app.routers.ranking.cache.get_manifest", new=AsyncMock(return_value=manifest)):
-            resp = client.get("/ranking/latest")
+    with patch("app.routers.ranking.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/ranking/manifest")
     assert resp.status_code == 200
     assert resp.json()["latest"] == "2026-03-28"
 
@@ -47,10 +46,10 @@ def test_ranking_day(client):
     assert resp.json()["date"] == "2026-03-28"
 
 
-def test_nikkei_latest(client):
+def test_nikkei_manifest(client):
     manifest = {"dates": ["2026-03-28"], "latest_date": "2026-03-28", "generated_at": ""}
     with patch("app.routers.nikkei.cache.get_manifest", new=AsyncMock(return_value=manifest)):
-        resp = client.get("/nikkei/latest")
+        resp = client.get("/nikkei/manifest")
     assert resp.status_code == 200
     assert resp.json()["latest_date"] == "2026-03-28"
 
@@ -63,10 +62,10 @@ def test_nikkei_day(client):
     assert resp.json()["date"] == "2026-03-28"
 
 
-def test_yutai_latest(client):
+def test_yutai_manifest(client):
     manifest = {"latest_month": "2026-03", "latest_path": "2026-03.json", "months": []}
     with patch("app.routers.yutai.cache.get_manifest", new=AsyncMock(return_value=manifest)):
-        resp = client.get("/yutai/latest")
+        resp = client.get("/yutai/manifest")
     assert resp.status_code == 200
     assert resp.json()["latest_month"] == "2026-03"
 
