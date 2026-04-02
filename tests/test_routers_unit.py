@@ -16,9 +16,11 @@ def client(monkeypatch):
     importlib.reload(r2_mod)
     import app.routers.ranking as ranking_mod
     import app.routers.nikkei as nikkei_mod
+    import app.routers.topix33 as topix33_mod
     import app.routers.yutai as yutai_mod
     importlib.reload(ranking_mod)
     importlib.reload(nikkei_mod)
+    importlib.reload(topix33_mod)
     importlib.reload(yutai_mod)
     from app.main import app
     return TestClient(app)
@@ -60,6 +62,29 @@ def test_nikkei_day(client):
         resp = client.get("/nikkei/2026-03-28")
     assert resp.status_code == 200
     assert resp.json()["date"] == "2026-03-28"
+
+
+def test_topix33_manifest(client):
+    manifest = {"dates": ["2026-04-01"], "latest_date": "2026-04-01", "generated_at": ""}
+    with patch("app.routers.topix33.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/topix33/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["latest_date"] == "2026-04-01"
+
+
+def test_topix33_day(client):
+    day = {
+        "date": "2026-04-01",
+        "index": "topix33",
+        "summary": {"advancers": 20, "decliners": 12, "unchanged": 1},
+        "top_positive": [],
+        "top_negative": [],
+        "sectors": [],
+    }
+    with patch("app.routers.topix33.cache.get_day", new=AsyncMock(return_value=day)):
+        resp = client.get("/topix33/2026-04-01")
+    assert resp.status_code == 200
+    assert resp.json()["index"] == "topix33"
 
 
 def test_yutai_manifest(client):

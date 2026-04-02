@@ -37,6 +37,24 @@ GET /nikkei/{date}          # date: YYYY-MM-DD
 → {"date": "2026-03-27", "index": "nikkei225", "records": [...]}
 ```
 
+### TOPIX33
+
+```
+GET /topix33/manifest
+→ {"dates": [...], "latest_date": "2026-04-01", "generated_at": "..."}
+
+GET /topix33/{date}         # date: YYYY-MM-DD
+→ {
+    "date": "2026-04-01",
+    "index": "topix33",
+    "generated_at": "...",
+    "summary": {"advancers": 20, "decliners": 12, "unchanged": 1},
+    "top_positive": [...],
+    "top_negative": [...],
+    "sectors": [...]
+  }
+```
+
 ### 株主優待
 
 ```
@@ -66,6 +84,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/manife
 curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/2026-03-27
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/2026-03-27
+curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/2026-04-01
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
 ```
