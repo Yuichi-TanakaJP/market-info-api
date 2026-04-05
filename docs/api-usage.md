@@ -105,7 +105,6 @@ GET /market-calendar/jpx-closed
 | 変数名 | 用途 |
 |------|------|
 | `R2_PUBLIC_BASE_URL` | 公開 JSON の取得元ベース URL |
-| `JPX_CLOSED_OBJECT_KEY` | `/market-calendar/jpx-closed` が参照する JPX休場日 JSON object key。必須 |
 
 ---
 
@@ -124,6 +123,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
 ```
+
+`/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照する。
 
 ---
 

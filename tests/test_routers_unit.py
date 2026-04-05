@@ -8,10 +8,6 @@ from unittest.mock import AsyncMock, patch
 @pytest.fixture()
 def client(monkeypatch):
     monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.com")
-    monkeypatch.setenv(
-        "JPX_CLOSED_OBJECT_KEY",
-        "market_closed/jpx_market_closed_20260101_to_20271231.json",
-    )
     # config はモジュールロード時に評価されるため importlib でリロード
     import importlib
     import app.config as cfg_mod
@@ -32,9 +28,8 @@ def client(monkeypatch):
     return TestClient(app)
 
 
-def test_market_calendar_object_key_can_be_overridden(monkeypatch):
+def test_market_calendar_uses_fixed_latest_object_key(monkeypatch):
     monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.com")
-    monkeypatch.setenv("JPX_CLOSED_OBJECT_KEY", "market_closed/custom_range.json")
 
     import importlib
     import app.config as cfg_mod
@@ -43,36 +38,7 @@ def test_market_calendar_object_key_can_be_overridden(monkeypatch):
     importlib.reload(cfg_mod)
     importlib.reload(market_calendar_mod)
 
-    assert market_calendar_mod.get_jpx_closed_object_key() == "market_closed/custom_range.json"
-
-
-def test_market_calendar_missing_object_key_only_breaks_that_endpoint(monkeypatch):
-    monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.com")
-    monkeypatch.delenv("JPX_CLOSED_OBJECT_KEY", raising=False)
-
-    import importlib
-    import app.config as cfg_mod
-    import app.r2 as r2_mod
-    import app.routers.market_calendar as market_calendar_mod
-    import app.routers.ranking as ranking_mod
-    import app.routers.nikkei as nikkei_mod
-    import app.routers.topix33 as topix33_mod
-    import app.routers.yutai as yutai_mod
-
-    importlib.reload(cfg_mod)
-    importlib.reload(r2_mod)
-    importlib.reload(market_calendar_mod)
-    importlib.reload(ranking_mod)
-    importlib.reload(nikkei_mod)
-    importlib.reload(topix33_mod)
-    importlib.reload(yutai_mod)
-
-    from app.main import app
-
-    client = TestClient(app)
-    resp = client.get("/market-calendar/jpx-closed")
-    assert resp.status_code == 503
-    assert "JPX_CLOSED_OBJECT_KEY" in resp.json()["detail"]
+    assert cfg_mod.JPX_CLOSED_OBJECT_KEY == "market_closed/jpx_market_closed_latest.json"
 
 
 def test_health(client):

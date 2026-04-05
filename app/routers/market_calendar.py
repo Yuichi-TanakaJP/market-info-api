@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from app import cache, r2
-from app.config import get_jpx_closed_object_key
+from app.config import JPX_CLOSED_OBJECT_KEY
 
 router = APIRouter(prefix="/market-calendar", tags=["market-calendar"])
 
@@ -14,11 +14,9 @@ async def get_jpx_closed() -> dict:
     try:
         return await cache.get_manifest(
             "market-calendar/jpx-closed",
-            lambda: r2.fetch_json(get_jpx_closed_object_key()),
+            lambda: r2.fetch_json(JPX_CLOSED_OBJECT_KEY),
         )
     except Exception as exc:
-        if isinstance(exc, RuntimeError) and "JPX_CLOSED_OBJECT_KEY" in str(exc):
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status == 404:
             raise HTTPException(status_code=404, detail="jpx closed calendar not found") from exc
