@@ -86,7 +86,7 @@ API 移行後は `latest_month` から直接 `/yutai/monthly/{latest_month}` で
 - response shape は既存 thin JSON と同じ:
   - top-level: `as_of_date`, `from`, `to`, `days`
   - `days[]`: `date`, `market_closed`, `label`
-- Cloud Run 側では `JPX_CLOSED_OBJECT_KEY` の設定が必要
+- API は `market_closed/jpx_market_closed_latest.json` を固定参照する
 
 ---
 
@@ -100,12 +100,6 @@ API 移行後は `latest_month` から直接 `/yutai/monthly/{latest_month}` で
 | `MARKET_INFO_API_BASE_URL` | **新規追加**: `https://market-info-api-619599800912.asia-northeast1.run.app` |
 
 Vercel の環境変数設定画面で上記を変更する。
-
-Cloud Run 側の追加設定:
-
-| 環境変数 | 用途 |
-|----------|------|
-| `JPX_CLOSED_OBJECT_KEY` | `/market-calendar/jpx-closed` が参照する休場日 JSON object key |
 
 ---
 
