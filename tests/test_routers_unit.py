@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import httpx
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
@@ -17,11 +18,13 @@ def client(monkeypatch):
     import app.routers.ranking as ranking_mod
     import app.routers.nikkei as nikkei_mod
     import app.routers.market_calendar as market_calendar_mod
+    import app.routers.sbi as sbi_mod
     import app.routers.topix33 as topix33_mod
     import app.routers.yutai as yutai_mod
     importlib.reload(ranking_mod)
     importlib.reload(nikkei_mod)
     importlib.reload(market_calendar_mod)
+    importlib.reload(sbi_mod)
     importlib.reload(topix33_mod)
     importlib.reload(yutai_mod)
     from app.main import app
@@ -94,6 +97,42 @@ def test_market_calendar_jpx_closed(client):
     assert resp.status_code == 200
     assert resp.json()["from"] == "2026-01-01"
     assert resp.json()["days"][0]["market_closed"] is True
+
+
+def test_sbi_credit_latest(client):
+    payload = {
+        "date": "2026-04-05",
+        "generated_at": "2026-04-05T12:00:00+09:00",
+        "record_count": 1,
+        "by_code": {"1301": {"position_status": "available"}},
+    }
+    with patch("app.routers.sbi.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/sbi/credit/latest")
+    assert resp.status_code == 200
+    assert resp.json()["record_count"] == 1
+
+
+def test_sbi_credit_monthly(client):
+    payload = {
+        "date": "2026-04-05",
+        "generated_at": "2026-04-05T12:00:00+09:00",
+        "record_count": 1,
+        "by_code": {"1301": {"position_status": "available"}},
+    }
+    with patch("app.routers.sbi.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/sbi/credit/monthly/2026-04")
+    assert resp.status_code == 200
+    assert resp.json()["date"] == "2026-04-05"
+
+
+def test_sbi_credit_latest_not_found(client):
+    request = httpx.Request("GET", "https://r2.example.com/sbi/credit/latest.json")
+    response = httpx.Response(404, request=request)
+    error = httpx.HTTPStatusError("not found", request=request, response=response)
+    with patch("app.routers.sbi.cache.get_manifest", new=AsyncMock(side_effect=error)):
+        resp = client.get("/sbi/credit/latest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "sbi credit latest not found"
 
 
 def test_topix33_manifest(client):
