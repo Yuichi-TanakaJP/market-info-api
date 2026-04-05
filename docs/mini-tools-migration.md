@@ -70,6 +70,26 @@ API 移行後は `latest_month` から直接 `/yutai/monthly/{latest_month}` で
 
 ---
 
+### 共通休場日カレンダー
+
+**現状**
+- mini-tools は公開 JSON を直接参照して JPX休場日を判定している
+- 参照先は `jpx_market_closed_20260101_to_20271231.json` と同等 shape の thin JSON
+
+**変更後**
+- 取得先を `MARKET_INFO_API_BASE_URL` 配下の共通 endpoint に寄せる
+- フェッチ先:
+  - `{MARKET_INFO_API_BASE_URL}/market-calendar/jpx-closed`
+
+**注意**
+- API は current period filename を隠し、常に共通 endpoint を返す
+- response shape は既存 thin JSON と同じ:
+  - top-level: `as_of_date`, `from`, `to`, `days`
+  - `days[]`: `date`, `market_closed`, `label`
+- Cloud Run 側では `JPX_CLOSED_OBJECT_KEY` の設定が必要
+
+---
+
 ## 環境変数の変更まとめ
 
 | 環境変数 | 変更 |
@@ -80,6 +100,12 @@ API 移行後は `latest_month` から直接 `/yutai/monthly/{latest_month}` で
 | `MARKET_INFO_API_BASE_URL` | **新規追加**: `https://market-info-api-619599800912.asia-northeast1.run.app` |
 
 Vercel の環境変数設定画面で上記を変更する。
+
+Cloud Run 側の追加設定:
+
+| 環境変数 | 用途 |
+|----------|------|
+| `JPX_CLOSED_OBJECT_KEY` | `/market-calendar/jpx-closed` が参照する休場日 JSON object key |
 
 ---
 
@@ -136,5 +162,21 @@ Vercel の環境変数設定画面で上記を変更する。
   "year": 2026,
   "month": 12,
   "records": [...]
+}
+```
+
+### `/market-calendar/jpx-closed`
+```json
+{
+  "as_of_date": "2026-04-05",
+  "from": "2026-01-01",
+  "to": "2027-12-31",
+  "days": [
+    {
+      "date": "2026-01-01",
+      "market_closed": true,
+      "label": "元日"
+    }
+  ]
 }
 ```
