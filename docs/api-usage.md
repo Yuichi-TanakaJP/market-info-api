@@ -65,6 +65,32 @@ GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 → {"year": 2026, "month": 12, "records": [...]}
 ```
 
+### 日興一般信用
+
+```
+GET /nikko/credit
+→ {
+    "date": "2026-04-04",
+    "generated_at": "...",
+    "record_count": 4243,
+    "by_code": {...}
+  }
+```
+
+### JPX休場日
+
+```
+GET /market-calendar/jpx-closed
+→ {
+    "as_of_date": "2026-04-05",
+    "from": "2026-01-01",
+    "to": "2027-12-31",
+    "days": [
+      {"date": "2026-01-01", "market_closed": true, "label": "元日"}
+    ]
+  }
+```
+
 ---
 
 ## キャッシュ
@@ -73,6 +99,13 @@ GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 |------|-----|
 | manifest | 5分 |
 | 日次データ | 60分 |
+
+## 関連環境変数
+
+| 変数名 | 用途 |
+|------|------|
+| `R2_PUBLIC_BASE_URL` | 公開 JSON の取得元ベース URL |
+| `JPX_CLOSED_OBJECT_KEY` | `/market-calendar/jpx-closed` が参照する JPX休場日 JSON object key。必須 |
 
 ---
 
@@ -88,6 +121,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/manife
 curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/2026-04-01
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
+curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
 ```
 
 ---
