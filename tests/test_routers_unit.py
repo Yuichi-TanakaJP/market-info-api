@@ -15,12 +15,14 @@ def client(monkeypatch):
     importlib.reload(cfg_mod)
     import app.r2 as r2_mod
     importlib.reload(r2_mod)
+    import app.routers.earnings_calendar as earnings_calendar_mod
     import app.routers.ranking as ranking_mod
     import app.routers.nikkei as nikkei_mod
     import app.routers.market_calendar as market_calendar_mod
     import app.routers.sbi as sbi_mod
     import app.routers.topix33 as topix33_mod
     import app.routers.yutai as yutai_mod
+    importlib.reload(earnings_calendar_mod)
     importlib.reload(ranking_mod)
     importlib.reload(nikkei_mod)
     importlib.reload(market_calendar_mod)
@@ -97,6 +99,44 @@ def test_market_calendar_jpx_closed(client):
     assert resp.status_code == 200
     assert resp.json()["from"] == "2026-01-01"
     assert resp.json()["days"][0]["market_closed"] is True
+
+
+def test_earnings_calendar_overseas_latest(client):
+    payload = {
+        "generated_at": "2026-04-05T12:00:00+09:00",
+        "records": [{"symbol": "AAPL", "date": "2026-04-30"}],
+    }
+    with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/earnings-calendar/overseas/latest")
+    assert resp.status_code == 200
+    assert resp.json()["records"][0]["symbol"] == "AAPL"
+
+
+def test_earnings_calendar_overseas_monthly(client):
+    payload = {
+        "year_month": "2026-04",
+        "records": [{"symbol": "MSFT", "date": "2026-04-28"}],
+    }
+    with patch("app.routers.earnings_calendar.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/earnings-calendar/overseas/monthly/2026-04")
+    assert resp.status_code == 200
+    assert resp.json()["year_month"] == "2026-04"
+
+
+def test_earnings_calendar_overseas_monthly_invalid_format(client):
+    resp = client.get("/earnings-calendar/overseas/monthly/2026-4")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "year_month must be YYYY-MM format"
+
+
+def test_earnings_calendar_overseas_manifest_not_found(client):
+    request = httpx.Request("GET", "https://r2.example.com/earnings-calendar/overseas/manifest.json")
+    response = httpx.Response(404, request=request)
+    error = httpx.HTTPStatusError("not found", request=request, response=response)
+    with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(side_effect=error)):
+        resp = client.get("/earnings-calendar/overseas/manifest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "overseas earnings calendar manifest not found"
 
 
 def test_sbi_credit_latest(client):
