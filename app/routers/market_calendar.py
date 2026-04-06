@@ -8,9 +8,22 @@ from app.config import JPX_CLOSED_OBJECT_KEY
 router = APIRouter(prefix="/market-calendar", tags=["market-calendar"])
 
 
-@router.get("/jpx-closed")
+@router.get(
+    "/jpx-closed",
+    summary="JPX 休場日カレンダーを取得",
+    responses={
+        404: {"description": "R2 にファイルが存在しない"},
+        502: {"description": "R2 からの取得失敗"},
+    },
+)
 async def get_jpx_closed() -> dict:
-    """JPX休場日 thin JSON を返す。"""
+    """JPX 休場日の thin JSON を返す。
+
+    - `closed_dates`: 休場日の日付リスト（YYYY-MM-DD 形式）
+
+    更新単位: 不定期（年次カレンダー更新時）。
+    mini-tools はこのデータを使って営業日判定を行う。
+    """
     try:
         return await cache.get_manifest(
             "market-calendar/jpx-closed",

@@ -212,3 +212,65 @@ def test_yutai_month(client):
         resp = client.get("/yutai/monthly/2026-03")
     assert resp.status_code == 200
     assert resp.json()["month"] == 3
+
+
+# --- 404 / 502 contract tests ---
+
+def _make_http_error(url: str, status: int) -> httpx.HTTPStatusError:
+    req = httpx.Request("GET", url)
+    res = httpx.Response(status, request=req)
+    return httpx.HTTPStatusError("error", request=req, response=res)
+
+
+def test_ranking_day_not_found(client):
+    err = _make_http_error("https://r2.example.com/stock-ranking/20260228.json", 404)
+    with patch("app.routers.ranking.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/ranking/2026-02-28")
+    assert resp.status_code == 404
+    assert "2026-02-28" in resp.json()["detail"]
+
+
+def test_ranking_manifest_502(client):
+    err = _make_http_error("https://r2.example.com/stock-ranking/manifest.json", 500)
+    with patch("app.routers.ranking.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/ranking/manifest")
+    assert resp.status_code == 502
+
+
+def test_topix33_day_not_found(client):
+    err = _make_http_error("https://r2.example.com/topix33/topix33_2026-02-28.json", 404)
+    with patch("app.routers.topix33.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/topix33/2026-02-28")
+    assert resp.status_code == 404
+    assert "2026-02-28" in resp.json()["detail"]
+
+
+def test_nikkei_day_not_found(client):
+    err = _make_http_error("https://r2.example.com/nikkei-contribution/nikkei_contribution_2026-02-28.json", 404)
+    with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/nikkei/2026-02-28")
+    assert resp.status_code == 404
+    assert "2026-02-28" in resp.json()["detail"]
+
+
+def test_market_calendar_jpx_closed_not_found(client):
+    err = _make_http_error("https://r2.example.com/market_closed/jpx_market_closed_latest.json", 404)
+    with patch("app.routers.market_calendar.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-calendar/jpx-closed")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "jpx closed calendar not found"
+
+
+def test_nikko_credit(client):
+    payload = {"by_code": {"8591": {"margin": True}}, "generated_at": "2026-04-05"}
+    with patch("app.routers.nikko.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/nikko/credit")
+    assert resp.status_code == 200
+    assert "by_code" in resp.json()
+
+
+def test_nikko_credit_502(client):
+    err = _make_http_error("https://r2.example.com/nikko/credit/latest.json", 500)
+    with patch("app.routers.nikko.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/nikko/credit")
+    assert resp.status_code == 502
