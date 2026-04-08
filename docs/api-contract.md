@@ -54,6 +54,7 @@ API 側はフォーマット検証を行わず、不正な形式の場合は R2 
 | `/topix33/*` | 営業日ごと | 同上 |
 | `/nikkei/*` | 営業日ごと | 同上 |
 | `/market-calendar/jpx-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
+| `/market-calendar/us-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
 | `/earnings-calendar/overseas/*` | 不定期 | 決算データ更新時 |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |

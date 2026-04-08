@@ -85,8 +85,22 @@ API 移行後は `latest_month` から直接 `/yutai/monthly/{latest_month}` で
 - API は current period filename を隠し、常に共通 endpoint を返す
 - response shape は既存 thin JSON と同じ:
   - top-level: `as_of_date`, `from`, `to`, `days`
-  - `days[]`: `date`, `market_closed`, `label`
+- `days[]`: `date`, `market_closed`, `label`
 - API は `market_closed/jpx_market_closed_latest.json` を固定参照する
+
+### US休場日カレンダー
+
+**変更後**
+- 取得先を `MARKET_INFO_API_BASE_URL` 配下の共通 endpoint に寄せる
+- フェッチ先:
+  - `{MARKET_INFO_API_BASE_URL}/market-calendar/us-closed`
+
+**注意**
+- API は current period filename を隠し、常に共通 endpoint を返す
+- response shape は JPX 版と同じ thin JSON:
+  - top-level: `as_of_date`, `from`, `to`, `days`
+  - `days[]`: `date`, `market_closed`, `label`
+- API は `market_closed/us_market_closed_latest.json` を固定参照する
 
 ---
 

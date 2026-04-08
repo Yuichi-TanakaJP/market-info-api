@@ -44,6 +44,7 @@ def test_market_calendar_uses_fixed_latest_object_key(monkeypatch):
     importlib.reload(market_calendar_mod)
 
     assert cfg_mod.JPX_CLOSED_OBJECT_KEY == "market_closed/jpx_market_closed_latest.json"
+    assert cfg_mod.US_CLOSED_OBJECT_KEY == "market_closed/us_market_closed_latest.json"
 
 
 def test_health(client):
@@ -99,6 +100,23 @@ def test_market_calendar_jpx_closed(client):
     assert resp.status_code == 200
     assert resp.json()["from"] == "2026-01-01"
     assert resp.json()["days"][0]["market_closed"] is True
+
+
+def test_market_calendar_us_closed(client):
+    payload = {
+        "as_of_date": "2026-04-08",
+        "from": "2026-01-01",
+        "to": "2027-12-31",
+        "days": [
+            {"date": "2026-01-01", "market_closed": True, "label": "New Year's Day"},
+            {"date": "2026-01-02", "market_closed": False, "label": ""},
+        ],
+    }
+    with patch("app.routers.market_calendar.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/market-calendar/us-closed")
+    assert resp.status_code == 200
+    assert resp.json()["to"] == "2027-12-31"
+    assert resp.json()["days"][0]["label"] == "New Year's Day"
 
 
 def test_earnings_calendar_overseas_latest(client):
@@ -259,6 +277,14 @@ def test_market_calendar_jpx_closed_not_found(client):
         resp = client.get("/market-calendar/jpx-closed")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "jpx closed calendar not found"
+
+
+def test_market_calendar_us_closed_not_found(client):
+    err = _make_http_error("https://r2.example.com/market_closed/us_market_closed_latest.json", 404)
+    with patch("app.routers.market_calendar.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-calendar/us-closed")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "us closed calendar not found"
 
 
 def test_nikko_credit(client):
