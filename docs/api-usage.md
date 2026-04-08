@@ -91,6 +91,20 @@ GET /market-calendar/jpx-closed
   }
 ```
 
+### US休場日
+
+```
+GET /market-calendar/us-closed
+→ {
+    "as_of_date": "2026-04-08",
+    "from": "2026-01-01",
+    "to": "2027-12-31",
+    "days": [
+      {"date": "2026-01-01", "market_closed": true, "label": "New Year's Day"}
+    ]
+  }
+```
+
 ---
 
 ## キャッシュ
@@ -122,9 +136,11 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/us-closed
 ```
 
 `/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照する。
+`/market-calendar/us-closed` は `market_closed/us_market_closed_latest.json` を固定参照する。
 
 ---
 

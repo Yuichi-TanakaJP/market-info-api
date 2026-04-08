@@ -12,6 +12,7 @@ def _required(name: str) -> str:
 
 R2_PUBLIC_BASE_URL: str = _required("R2_PUBLIC_BASE_URL")
 JPX_CLOSED_OBJECT_KEY: str = "market_closed/jpx_market_closed_latest.json"
+US_CLOSED_OBJECT_KEY: str = "market_closed/us_market_closed_latest.json"
 
 # 未設定 = 認証なし（将来 env var を設定するだけで有効化）
 MARKET_INFO_API_KEY: str = os.getenv("MARKET_INFO_API_KEY", "").strip()
