@@ -130,24 +130,38 @@ def test_market_calendar_us_closed(client):
 
 def test_earnings_calendar_overseas_latest(client):
     payload = {
-        "generated_at": "2026-04-05T12:00:00+09:00",
-        "records": [{"symbol": "AAPL", "date": "2026-04-30"}],
+        "as_of_date": "2026-04-05",
+        "calendar": [
+            {
+                "date": "2026-04-30",
+                "count": 1,
+                "detail_status": "confirmed",
+                "items": [{"event_id": "e1", "local_time": "09:00", "ticker": "AAPL", "stock_name": "Apple", "exchange_code": "US_NASDAQ", "fiscal_term": "26-2Q", "fiscal_term_name": "2026年 第2四半期", "sch_flg": "1", "country_code": "US"}],
+            }
+        ],
     }
     with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(return_value=payload)):
         resp = client.get("/earnings-calendar/overseas/latest")
     assert resp.status_code == 200
-    assert resp.json()["records"][0]["symbol"] == "AAPL"
+    assert resp.json()["calendar"][0]["items"][0]["ticker"] == "AAPL"
 
 
 def test_earnings_calendar_overseas_monthly(client):
     payload = {
-        "year_month": "2026-04",
-        "records": [{"symbol": "MSFT", "date": "2026-04-28"}],
+        "as_of_date": "2026-04-05",
+        "calendar": [
+            {
+                "date": "2026-04-28",
+                "count": 1,
+                "detail_status": "confirmed",
+                "items": [{"event_id": "e2", "local_time": "09:00", "ticker": "MSFT", "stock_name": "Microsoft", "exchange_code": "US_NASDAQ", "fiscal_term": "26-3Q", "fiscal_term_name": "2026年 第3四半期", "sch_flg": "1", "country_code": "US"}],
+            }
+        ],
     }
     with patch("app.routers.earnings_calendar.cache.get_day", new=AsyncMock(return_value=payload)):
         resp = client.get("/earnings-calendar/overseas/monthly/2026-04")
     assert resp.status_code == 200
-    assert resp.json()["year_month"] == "2026-04"
+    assert resp.json()["calendar"][0]["items"][0]["ticker"] == "MSFT"
 
 
 def test_earnings_calendar_overseas_monthly_invalid_format(client):

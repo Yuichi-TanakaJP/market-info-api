@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 
 from app import cache, r2
 
@@ -12,8 +13,59 @@ _OVERSEAS_PREFIX = "earnings-calendar/overseas"
 _YEAR_MONTH_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])$")
 
 
+class EarningsWindow(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+    from_: str = Field(alias="from")
+    to: str
+
+
+class EarningsMonthEntry(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    id: str
+    year: int
+    month: int
+    path: str
+    partial: bool
+    bucket: str
+
+
+class EarningsManifest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    as_of_date: str
+    current_window: EarningsWindow
+    months: list[EarningsMonthEntry]
+
+
+class EarningsItem(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    event_id: str
+    local_time: str
+    ticker: str
+    stock_name: str
+    exchange_code: str
+    fiscal_term: str
+    fiscal_term_name: str
+    sch_flg: str
+    country_code: str
+
+
+class EarningsCalendarDay(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    date: str
+    count: int
+    detail_status: str
+    items: list[EarningsItem]
+
+
+class EarningsCalendar(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    as_of_date: str
+    calendar: list[EarningsCalendarDay]
+
+
 @router.get(
     "/overseas/latest",
+    response_model=EarningsCalendar,
     summary="海外決算カレンダー全件スナップショットを取得",
     responses={
         404: {"description": "R2 にファイルが存在しない"},
@@ -40,6 +92,8 @@ async def get_overseas_latest() -> dict:
 
 @router.get(
     "/overseas/manifest",
+    response_model=EarningsManifest,
+    response_model_by_alias=True,
     summary="海外決算カレンダーの月別ファイル一覧を取得",
     responses={
         404: {"description": "R2 にファイルが存在しない"},
@@ -49,8 +103,8 @@ async def get_overseas_latest() -> dict:
 async def get_overseas_manifest() -> dict:
     """海外決算カレンダーの月別ファイル一覧 (manifest.json) を返す。
 
-    - `months`: 利用可能な年月の一覧（YYYY-MM 形式）
-    - `latest_month`: 最新月（YYYY-MM）
+    - `months`: 利用可能な年月の一覧
+    - `current_window`: 現在の取得ウィンドウ（from/to）
     """
     try:
         return await cache.get_manifest(
@@ -66,6 +120,7 @@ async def get_overseas_manifest() -> dict:
 
 @router.get(
     "/overseas/monthly/{year_month}",
+    response_model=EarningsCalendar,
     summary="指定月の海外決算カレンダー JSON を取得",
     responses={
         404: {"description": "指定月のデータが R2 に存在しない"},
@@ -75,9 +130,6 @@ async def get_overseas_manifest() -> dict:
 )
 async def get_overseas_monthly(year_month: str) -> dict:
     """YYYY-MM 形式の月に対応する海外決算カレンダー JSON を返す。
-
-    - `year_month`: 対象月（YYYY-MM）。形式が不正な場合は 422 を返す。
-    - `events`: 決算イベントの配列
 
     422 の場合: year_month が YYYY-MM 形式でない。
     404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。
