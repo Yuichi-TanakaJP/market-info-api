@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
 
@@ -9,8 +10,33 @@ router = APIRouter(prefix="/ranking", tags=["ranking"])
 _PREFIX = "stock-ranking"
 
 
+class RankingManifest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    dates: list[str]
+    latest: str
+
+
+class RankingRecord(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    market: str
+    ranking: str
+    rank: int
+    name: str
+    code: str
+    price: float
+    change: float
+    changeRate: float
+
+
+class RankingDay(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    date: str
+    records: list[RankingRecord]
+
+
 @router.get(
     "/manifest",
+    response_model=RankingManifest,
     summary="ランキング manifest を取得",
     responses={502: {"description": "R2 からの取得失敗"}},
 )
@@ -33,6 +59,7 @@ async def get_manifest() -> dict:
 
 @router.get(
     "/{date}",
+    response_model=RankingDay,
     summary="指定日のランキング JSON を取得",
     responses={
         404: {"description": "指定日のデータが R2 に存在しない（休場日・未来日・バッチ未実行日）"},
@@ -43,7 +70,7 @@ async def get_day(date: str) -> dict:
     """YYYY-MM-DD 形式の日付に対応する日次ランキング JSON を返す。
 
     - `date`: 対象日（YYYY-MM-DD）
-    - `rankings`: 銘柄ごとのランキングデータ配列
+    - `records`: 銘柄ごとのランキングデータ配列
 
     404 の場合: 休場日・未来日・バッチ未実行日のいずれか。
     mini-tools 側は manifest の `dates` に含まれる日付のみリクエストすること。

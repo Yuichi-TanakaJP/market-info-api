@@ -78,7 +78,16 @@ def test_nikkei_manifest(client):
 
 
 def test_nikkei_day(client):
-    day = {"date": "2026-03-28", "index": "nikkei225", "records": []}
+    day = {
+        "date": "2026-03-28",
+        "index": "nikkei225",
+        "generated_at": "2026-03-28T21:00:00+09:00",
+        "source": "https://nikkei225jp.com/",
+        "summary": {"total_contribution": 100.0, "advancers": 150, "decliners": 70, "unchanged": 5},
+        "top_positive": [],
+        "top_negative": [],
+        "records": [],
+    }
     with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(return_value=day)):
         resp = client.get("/nikkei/2026-03-28")
     assert resp.status_code == 200
@@ -162,7 +171,7 @@ def test_sbi_credit_latest(client):
         "date": "2026-04-05",
         "generated_at": "2026-04-05T12:00:00+09:00",
         "record_count": 1,
-        "by_code": {"1301": {"position_status": "available"}},
+        "by_code": {"1301": {"position_status": "available", "unit_upper_limit": "50 単元", "is_hyper": False, "is_daily": True, "is_short": False, "is_long": False}},
     }
     with patch("app.routers.sbi.cache.get_manifest", new=AsyncMock(return_value=payload)):
         resp = client.get("/sbi/credit/latest")
@@ -175,7 +184,7 @@ def test_sbi_credit_monthly(client):
         "date": "2026-04-05",
         "generated_at": "2026-04-05T12:00:00+09:00",
         "record_count": 1,
-        "by_code": {"1301": {"position_status": "available"}},
+        "by_code": {"1301": {"position_status": "available", "unit_upper_limit": "50 単元", "is_hyper": False, "is_daily": True, "is_short": False, "is_long": False}},
     }
     with patch("app.routers.sbi.cache.get_day", new=AsyncMock(return_value=payload)):
         resp = client.get("/sbi/credit/monthly/2026-04")
@@ -288,7 +297,12 @@ def test_market_calendar_us_closed_not_found(client):
 
 
 def test_nikko_credit(client):
-    payload = {"by_code": {"8591": {"margin": True}}, "generated_at": "2026-04-05"}
+    payload = {
+        "date": "2026-04-04",
+        "generated_at": "2026-04-04T13:00:00+09:00",
+        "record_count": 1,
+        "by_code": {"8591": {"institutional_buy": True, "institutional_short": True, "general_buy": True, "general_short": True, "available_shares": 900}},
+    }
     with patch("app.routers.nikko.cache.get_manifest", new=AsyncMock(return_value=payload)):
         resp = client.get("/nikko/credit")
     assert resp.status_code == 200
