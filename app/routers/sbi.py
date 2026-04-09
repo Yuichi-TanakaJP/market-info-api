@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
 
@@ -10,8 +11,27 @@ _LATEST_KEY = "sbi/credit/latest.json"
 _MONTHLY_PREFIX = "sbi/credit/monthly"
 
 
+class SbiCreditItem(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    position_status: str
+    unit_upper_limit: str
+    is_hyper: bool
+    is_daily: bool
+    is_short: bool
+    is_long: bool
+
+
+class SbiCredit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    date: str
+    generated_at: str
+    record_count: int
+    by_code: dict[str, SbiCreditItem]
+
+
 @router.get(
     "/credit/latest",
+    response_model=SbiCredit,
     summary="SBI 信用データの最新スナップショットを取得",
     responses={
         404: {"description": "R2 にファイルが存在しない"},
@@ -37,6 +57,7 @@ async def get_credit_latest() -> dict:
 
 @router.get(
     "/credit/monthly/{year_month}",
+    response_model=SbiCredit,
     summary="指定月の SBI 信用データを取得",
     responses={
         404: {"description": "指定月のデータが R2 に存在しない"},

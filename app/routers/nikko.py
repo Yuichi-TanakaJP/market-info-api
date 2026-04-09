@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
 
@@ -9,8 +10,26 @@ router = APIRouter(prefix="/nikko", tags=["nikko"])
 _CREDIT_KEY = "nikko/credit/latest.json"
 
 
+class NikkoCreditItem(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    institutional_buy: bool
+    institutional_short: bool
+    general_buy: bool
+    general_short: bool
+    available_shares: int
+
+
+class NikkoCredit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    date: str
+    generated_at: str
+    record_count: int
+    by_code: dict[str, NikkoCreditItem]
+
+
 @router.get(
     "/credit",
+    response_model=NikkoCredit,
     summary="日興証券 信用取引取扱銘柄一覧を取得",
     responses={502: {"description": "R2 からの取得失敗"}},
 )

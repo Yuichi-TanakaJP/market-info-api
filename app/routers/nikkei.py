@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
 
@@ -10,8 +11,42 @@ _PREFIX = "nikkei-contribution"
 _MANIFEST_FILE = "nikkei_contribution_manifest.json"
 
 
+class NikkeiManifest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    dates: list[str]
+    latest_date: str
+
+
+class NikkeiSummary(BaseModel):
+    total_contribution: float
+    advancers: int
+    decliners: int
+    unchanged: int
+
+
+class NikkeiContributionItem(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    rank: int
+    code: str
+    name: str
+    contribution: float
+    chg_pct: float
+    weight_pct: float
+
+
+class NikkeiDay(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    date: str
+    index: str
+    summary: NikkeiSummary
+    top_positive: list[NikkeiContributionItem]
+    top_negative: list[NikkeiContributionItem]
+    records: list[NikkeiContributionItem]
+
+
 @router.get(
     "/manifest",
+    response_model=NikkeiManifest,
     summary="日経寄与度 manifest を取得",
     responses={502: {"description": "R2 からの取得失敗"}},
 )
@@ -34,6 +69,7 @@ async def get_manifest() -> dict:
 
 @router.get(
     "/{date}",
+    response_model=NikkeiDay,
     summary="指定日の日経寄与度 JSON を取得",
     responses={
         404: {"description": "指定日のデータが R2 に存在しない"},
@@ -44,7 +80,7 @@ async def get_day(date: str) -> dict:
     """YYYY-MM-DD 形式の日付に対応する日経平均寄与度 JSON を返す。
 
     - `date`: 対象日（YYYY-MM-DD）
-    - `contributions`: 銘柄ごとの寄与度データ配列
+    - `records`: 銘柄ごとの寄与度データ配列
 
     404 の場合: 休場日・未来日・バッチ未実行日のいずれか。
     """
