@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import defaultdict
 from typing import Any, Awaitable, Callable
 
 from cachetools import TTLCache
@@ -11,12 +12,10 @@ _DAY_TTL = 3600       # 60分
 _manifest_cache: TTLCache = TTLCache(maxsize=16, ttl=_MANIFEST_TTL)
 _day_cache: TTLCache = TTLCache(maxsize=128, ttl=_DAY_TTL)
 
-_locks: dict[str, asyncio.Lock] = {}
+_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 
 def _lock_for(key: str) -> asyncio.Lock:
-    if key not in _locks:
-        _locks[key] = asyncio.Lock()
     return _locks[key]
 
 
