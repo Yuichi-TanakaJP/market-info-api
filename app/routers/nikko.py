@@ -16,7 +16,7 @@ class NikkoCreditItem(BaseModel):
     institutional_short: bool
     general_buy: bool
     general_short: bool
-    available_shares: int
+    available_shares: int | None
 
 
 class NikkoCredit(BaseModel):

@@ -10,11 +10,19 @@ router = APIRouter(prefix="/yutai", tags=["yutai"])
 _PREFIX = "yutai/monthly"
 
 
+class YutaiManifestMonthEntry(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    year: int
+    month: int
+    path: str
+    count: int
+
+
 class YutaiManifest(BaseModel):
     model_config = ConfigDict(extra="allow")
     latest_month: str
     latest_path: str
-    months: list[str]
+    months: list[YutaiManifestMonthEntry]
 
 
 class YutaiRecord(BaseModel):
@@ -23,7 +31,7 @@ class YutaiRecord(BaseModel):
     code: str
     company_name: str
     benefit_summary: str
-    minimum_investment_yen: int
+    minimum_investment_yen: int | None
 
 
 class YutaiMonth(BaseModel):

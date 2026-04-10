@@ -4,6 +4,8 @@ import pytest
 import httpx
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
+import json
+from pathlib import Path
 
 
 @pytest.fixture()
@@ -31,6 +33,13 @@ def client(monkeypatch):
     importlib.reload(yutai_mod)
     from app.main import app
     return TestClient(app)
+
+
+_FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+
+
+def _load_fixture(name: str) -> dict:
+    return json.loads((_FIXTURES_DIR / name).read_text(encoding="utf-8"))
 
 
 def test_market_calendar_uses_fixed_latest_object_key(monkeypatch):
@@ -240,7 +249,11 @@ def test_topix33_day(client):
 
 
 def test_yutai_manifest(client):
-    manifest = {"latest_month": "2026-03", "latest_path": "2026-03.json", "months": []}
+    manifest = {
+        "latest_month": "2026-03",
+        "latest_path": "2026-03.json",
+        "months": [{"year": 2026, "month": 3, "path": "2026-03.json", "count": 0}],
+    }
     with patch("app.routers.yutai.cache.get_manifest", new=AsyncMock(return_value=manifest)):
         resp = client.get("/yutai/manifest")
     assert resp.status_code == 200
@@ -328,3 +341,55 @@ def test_nikko_credit_502(client):
     with patch("app.routers.nikko.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/nikko/credit")
     assert resp.status_code == 502
+
+
+def test_yutai_manifest_accepts_market_info_manifest_shape(client):
+    manifest = _load_fixture("yutai_manifest_real_shape.json")
+    with patch("app.routers.yutai.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/yutai/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["months"][0]["path"].endswith(".json")
+
+
+def test_yutai_month_accepts_market_info_month_shape(client):
+    month = _load_fixture("yutai_month_real_shape.json")
+    with patch("app.routers.yutai.cache.get_day", new=AsyncMock(return_value=month)):
+        resp = client.get("/yutai/monthly/2026-04")
+    assert resp.status_code == 200
+    assert resp.json()["records"][0]["code"]
+
+
+def test_nikkei_day_accepts_market_info_records_without_rank(client):
+    day = _load_fixture("nikkei_day_real_shape.json")
+    with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(return_value=day)):
+        resp = client.get("/nikkei/2026-02-06")
+    assert resp.status_code == 200
+    assert "rank" not in resp.json()["records"][0]
+
+
+def test_nikko_credit_accepts_null_available_shares(client):
+    payload = {
+        "date": "2026-04-04",
+        "generated_at": "2026-04-04T13:00:00+09:00",
+        "record_count": 2,
+        "by_code": {
+            "130A": {
+                "institutional_buy": True,
+                "institutional_short": False,
+                "general_buy": True,
+                "general_short": False,
+                "available_shares": None,
+            },
+            "133A": {
+                "institutional_buy": False,
+                "institutional_short": False,
+                "general_buy": False,
+                "general_short": True,
+                "available_shares": 800,
+            },
+        },
+    }
+    with patch("app.routers.nikko.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/nikko/credit")
+    assert resp.status_code == 200
+    assert resp.json()["by_code"]["130A"]["available_shares"] is None

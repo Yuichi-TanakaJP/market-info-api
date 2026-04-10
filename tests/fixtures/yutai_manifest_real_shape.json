@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "generated_at": "2026-03-28T12:54:46.189083Z",
+  "source": "minkabu",
+  "latest_month": "2026-12",
+  "latest_path": "2026-12.json",
+  "months": [
+    {
+      "year": 2026,
+      "month": 12,
+      "path": "2026-12.json",
+      "count": 233
+    },
+    {
+      "year": 2026,
+      "month": 11,
+      "path": "2026-11.json",
+      "count": 53
+    }
+  ]
+}

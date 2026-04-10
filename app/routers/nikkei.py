@@ -34,6 +34,15 @@ class NikkeiContributionItem(BaseModel):
     weight_pct: float
 
 
+class NikkeiRecord(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    code: str
+    name: str
+    contribution: float
+    chg_pct: float
+    weight_pct: float
+
+
 class NikkeiDay(BaseModel):
     model_config = ConfigDict(extra="allow")
     date: str
@@ -41,7 +50,7 @@ class NikkeiDay(BaseModel):
     summary: NikkeiSummary
     top_positive: list[NikkeiContributionItem]
     top_negative: list[NikkeiContributionItem]
-    records: list[NikkeiContributionItem]
+    records: list[NikkeiRecord]
 
 
 @router.get(
