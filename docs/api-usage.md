@@ -59,7 +59,11 @@ GET /topix33/{date}         # date: YYYY-MM-DD
 
 ```
 GET /yutai/manifest
-→ {"latest_month": "2026-12", "latest_path": "2026-12.json", "months": [...]}
+→ {
+    "latest_month": "2026-12",
+    "latest_path": "2026-12.json",
+    "months": [{"year": 2026, "month": 12, "path": "2026-12.json", "count": 233}, ...]
+  }
 
 GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 → {"year": 2026, "month": 12, "records": [...]}

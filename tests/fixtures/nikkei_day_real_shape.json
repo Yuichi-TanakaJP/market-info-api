@@ -1,0 +1,60 @@
+{
+  "date": "2026-02-06",
+  "index": "nikkei225",
+  "generated_at": "2026-03-28T18:32:39+09:00",
+  "source": "https://nikkei225jp.com/chart/nikkei.php",
+  "summary": {
+    "total_contribution": 435.61,
+    "advancers": 164,
+    "decliners": 58,
+    "unchanged": 3
+  },
+  "top_positive": [
+    {
+      "rank": 1,
+      "code": "8035",
+      "name": "東京エレクトロン",
+      "contribution": 104.29,
+      "chg_pct": 2.6,
+      "weight_pct": 7.58
+    }
+  ],
+  "top_negative": [
+    {
+      "rank": 1,
+      "code": "4519",
+      "name": "中外製薬",
+      "contribution": -51.84,
+      "chg_pct": -5.67,
+      "weight_pct": 1.59
+    }
+  ],
+  "records": [
+    {
+      "code": "6857",
+      "sector": "160",
+      "name": "アドバンテスト",
+      "price": 24.0,
+      "minashi": 196.0,
+      "weight_pct": 12.09,
+      "chg_pct": 1.15,
+      "chg": 280.0,
+      "contribution": 74.87,
+      "size_value": 12.09,
+      "color_value": 1.15
+    },
+    {
+      "code": "9983",
+      "sector": "270",
+      "name": "ファーストリテイリング",
+      "price": 63.0,
+      "minashi": 152.0,
+      "weight_pct": 9.39,
+      "chg_pct": 0.28,
+      "chg": 180.0,
+      "contribution": 14.44,
+      "size_value": 9.39,
+      "color_value": 0.28
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "year": 2026,
+  "month": 4,
+  "generated_at": "2026-03-28T12:37:44.290394Z",
+  "source": "minkabu",
+  "records": [
+    {
+      "month": 4,
+      "code": "1383",
+      "company_name": "ベルグアース",
+      "benefit_summary": "QUOカード、メロン等",
+      "minkabu_yutai_url": "https://minkabu.jp/stock/1383/yutai",
+      "minimum_investment_text": "32.3万",
+      "minimum_investment_yen": 323000,
+      "benefit_category_tags": [
+        "食料品",
+        "金券",
+        "暮らし"
+      ],
+      "has_official_link": false,
+      "official_benefit_url": null,
+      "official_link_status": "missing",
+      "source": "minkabu",
+      "fetched_at": "2026-03-28T12:37:44.290394Z"
+    },
+    {
+      "month": 4,
+      "code": "147A",
+      "company_name": "ソラコム",
+      "benefit_summary": "自社サービス・クーポン",
+      "minkabu_yutai_url": "https://minkabu.jp/stock/147A/yutai",
+      "minimum_investment_text": "56.3万",
+      "minimum_investment_yen": 563000,
+      "benefit_category_tags": [
+        "暮らし"
+      ],
+      "has_official_link": true,
+      "official_benefit_url": "https://soracom.com/ja/ir/stock_benefit",
+      "official_link_status": "found",
+      "source": "minkabu",
+      "fetched_at": "2026-03-28T12:37:44.290394Z"
+    }
+  ]
+}
