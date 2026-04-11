@@ -24,6 +24,7 @@ def client(monkeypatch):
     import app.routers.sbi as sbi_mod
     import app.routers.topix33 as topix33_mod
     import app.routers.yutai as yutai_mod
+    import app.routers.market_rankings as market_rankings_mod
     importlib.reload(earnings_calendar_mod)
     importlib.reload(ranking_mod)
     importlib.reload(nikkei_mod)
@@ -31,6 +32,7 @@ def client(monkeypatch):
     importlib.reload(sbi_mod)
     importlib.reload(topix33_mod)
     importlib.reload(yutai_mod)
+    importlib.reload(market_rankings_mod)
     from app.main import app
     return TestClient(app)
 
@@ -393,3 +395,103 @@ def test_nikko_credit_accepts_null_available_shares(client):
         resp = client.get("/nikko/credit")
     assert resp.status_code == 200
     assert resp.json()["by_code"]["130A"]["available_shares"] is None
+
+
+# ---------------------------------------------------------------------------
+# market-rankings
+# ---------------------------------------------------------------------------
+
+_MARKET_RANKINGS_MANIFEST = {
+    "latest": "2026-04",
+    "months": ["2026-04"],
+    "generatedAt": "2026-04-11T12:00:00Z",
+}
+
+_MARKET_RANKINGS_MONTH = {
+    "month": "2026-04",
+    "generatedAt": "2026-04-11T12:00:00Z",
+    "markets": {
+        "prime": {
+            "date": "2026-04-11",
+            "records": [
+                {
+                    "rank": 1,
+                    "code": "7203",
+                    "name": "トヨタ自動車",
+                    "industry": "輸送用機器",
+                    "marketCapOkuYen": 524236.0,
+                    "price": 3500.0,
+                    "priceTime": "15:30",
+                    "changeAmount": 50.0,
+                    "changeRate": 1.45,
+                    "dividendYieldPct": 2.5,
+                }
+            ],
+        },
+        "standard": {"date": "2026-04-11", "records": []},
+        "growth": {"date": "2026-04-11", "records": []},
+    },
+}
+
+
+def test_market_cap_manifest(client):
+    with patch("app.routers.market_rankings.cache.get_manifest", new=AsyncMock(return_value=_MARKET_RANKINGS_MANIFEST)):
+        resp = client.get("/market-rankings/market-cap/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["latest"] == "2026-04"
+    assert resp.json()["months"] == ["2026-04"]
+
+
+def test_market_cap_month(client):
+    with patch("app.routers.market_rankings.cache.get_day", new=AsyncMock(return_value=_MARKET_RANKINGS_MONTH)):
+        resp = client.get("/market-rankings/market-cap/monthly/2026-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["month"] == "2026-04"
+    assert "prime" in data["markets"]
+    assert data["markets"]["prime"]["records"][0]["code"] == "7203"
+    assert data["markets"]["prime"]["records"][0]["marketCapOkuYen"] == 524236.0
+
+
+def test_dividend_yield_manifest(client):
+    with patch("app.routers.market_rankings.cache.get_manifest", new=AsyncMock(return_value=_MARKET_RANKINGS_MANIFEST)):
+        resp = client.get("/market-rankings/dividend-yield/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["latest"] == "2026-04"
+
+
+def test_dividend_yield_month(client):
+    with patch("app.routers.market_rankings.cache.get_day", new=AsyncMock(return_value=_MARKET_RANKINGS_MONTH)):
+        resp = client.get("/market-rankings/dividend-yield/monthly/2026-04")
+    assert resp.status_code == 200
+    assert resp.json()["month"] == "2026-04"
+
+
+def test_market_cap_month_not_found(client):
+    err = _make_http_error("https://r2.example.com/market-rankings/market-cap/2026-03.json", 404)
+    with patch("app.routers.market_rankings.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-rankings/market-cap/monthly/2026-03")
+    assert resp.status_code == 404
+    assert "2026-03" in resp.json()["detail"]
+
+
+def test_dividend_yield_month_not_found(client):
+    err = _make_http_error("https://r2.example.com/market-rankings/dividend-yield/2026-03.json", 404)
+    with patch("app.routers.market_rankings.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-rankings/dividend-yield/monthly/2026-03")
+    assert resp.status_code == 404
+    assert "2026-03" in resp.json()["detail"]
+
+
+def test_market_cap_manifest_502(client):
+    err = _make_http_error("https://r2.example.com/market-rankings/market-cap/manifest.json", 500)
+    with patch("app.routers.market_rankings.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-rankings/market-cap/manifest")
+    assert resp.status_code == 502
+
+
+def test_dividend_yield_manifest_502(client):
+    err = _make_http_error("https://r2.example.com/market-rankings/dividend-yield/manifest.json", 500)
+    with patch("app.routers.market_rankings.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/market-rankings/dividend-yield/manifest")
+    assert resp.status_code == 502
