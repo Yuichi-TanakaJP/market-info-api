@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.routers import earnings_calendar, health, market_calendar, market_rankings, nikkei, nikko, ranking, sbi, topix33, yutai
+from app.routers import earnings_calendar, health, market_calendar, market_rankings, nikkei, nikko, ranking, sbi, topix33, us_ranking, yutai
 
 app = FastAPI(
     title="market-info-api",
@@ -27,3 +27,4 @@ app.include_router(market_calendar.router)
 app.include_router(topix33.router)
 app.include_router(yutai.router)
 app.include_router(market_rankings.router)
+app.include_router(us_ranking.router)
