@@ -495,3 +495,72 @@ def test_dividend_yield_manifest_502(client):
     with patch("app.routers.market_rankings.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/market-rankings/dividend-yield/manifest")
     assert resp.status_code == 502
+
+
+# ---------------------------------------------------------------------------
+# edinet
+# ---------------------------------------------------------------------------
+
+_EDINET_PAYLOAD = {
+    "as_of_date": "2026-04-23",
+    "total_count": 2,
+    "items": [
+        {
+            "doc_id": "S100ABCD",
+            "submit_datetime": "2026-04-23 09:00",
+            "edinet_code": "E00001",
+            "sec_code": "1234",
+            "filer_name": "テスト株式会社",
+            "doc_type_code": "120",
+            "doc_description": "有価証券報告書－第1期",
+            "has_xbrl": True,
+            "has_pdf": True,
+            "has_csv": True,
+        },
+        {
+            "doc_id": "S100EFGH",
+            "submit_datetime": "2026-04-23 10:00",
+            "edinet_code": "E00002",
+            "sec_code": None,
+            "filer_name": "テスト投資信託",
+            "doc_type_code": "010",
+            "doc_description": "有価証券届出書",
+            "has_xbrl": False,
+            "has_pdf": True,
+            "has_csv": False,
+        },
+    ],
+}
+
+
+def test_edinet_document_list_latest(client):
+    with patch("app.routers.edinet.cache.get_manifest", new=AsyncMock(return_value=_EDINET_PAYLOAD)):
+        resp = client.get("/edinet/document-list/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["as_of_date"] == "2026-04-23"
+    assert data["total_count"] == 2
+    assert data["items"][0]["doc_id"] == "S100ABCD"
+    assert data["items"][1]["sec_code"] is None
+
+
+def test_edinet_document_list_by_date(client):
+    with patch("app.routers.edinet.cache.get_day", new=AsyncMock(return_value=_EDINET_PAYLOAD)):
+        resp = client.get("/edinet/document-list/2026-04-23")
+    assert resp.status_code == 200
+    assert resp.json()["as_of_date"] == "2026-04-23"
+
+
+def test_edinet_document_list_by_date_not_found(client):
+    err = _make_http_error("https://r2.example.com/edinet/document-list/2026-01-01.json", 404)
+    with patch("app.routers.edinet.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/edinet/document-list/2026-01-01")
+    assert resp.status_code == 404
+    assert "2026-01-01" in resp.json()["detail"]
+
+
+def test_edinet_document_list_latest_502(client):
+    err = _make_http_error("https://r2.example.com/edinet/document-list/latest.json", 500)
+    with patch("app.routers.edinet.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/edinet/document-list/latest")
+    assert resp.status_code == 502
