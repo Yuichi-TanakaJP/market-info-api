@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict
 
@@ -8,6 +10,7 @@ from app import cache, r2
 router = APIRouter(prefix="/edinet", tags=["edinet"])
 
 _PREFIX = "edinet/document-list"
+_DATE_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
 
 
 class EdinetItem(BaseModel):
@@ -61,6 +64,7 @@ async def get_latest() -> dict:
     summary="EDINET書類一覧（日付指定）を取得",
     responses={
         404: {"description": "指定日のデータが R2 に存在しない"},
+        422: {"description": "date が YYYY-MM-DD 形式でない"},
         502: {"description": "R2 からの取得失敗"},
     },
 )
@@ -68,7 +72,10 @@ async def get_by_date(date: str) -> dict:
     """YYYY-MM-DD 形式の日付に対応する EDINET 提出書類一覧を返す。
 
     404 の場合: 指定日のデータが存在しない（未取得日・休日など）。
+    422 の場合: date が YYYY-MM-DD 形式でない。
     """
+    if not _DATE_RE.match(date):
+        raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD format")
     try:
         return await cache.get_day(
             f"{_PREFIX}/{date}",
