@@ -564,3 +564,9 @@ def test_edinet_document_list_latest_502(client):
     with patch("app.routers.edinet.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/edinet/document-list/latest")
     assert resp.status_code == 502
+
+
+def test_edinet_document_list_by_date_invalid_format(client):
+    resp = client.get("/edinet/document-list/20260423")
+    assert resp.status_code == 422
+    assert "YYYY-MM-DD" in resp.json()["detail"]
