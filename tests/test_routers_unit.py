@@ -191,6 +191,72 @@ def test_earnings_calendar_overseas_manifest_not_found(client):
     assert resp.json()["detail"] == "overseas earnings calendar manifest not found"
 
 
+def test_earnings_calendar_domestic_latest(client):
+    payload = {
+        "as_of_date": "2026-04-24",
+        "calendar": [
+            {
+                "date": "2026-05-01",
+                "count": 1,
+                "detail_status": "confirmed",
+                "items": [{"event_id": "d1", "time": "15:00", "code": "7203", "name": "トヨタ自動車", "market": "東証プライム", "announcement_type": "本決算", "publish_status": "発表予定", "progress_status": "通常"}],
+            }
+        ],
+    }
+    with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/earnings-calendar/domestic/latest")
+    assert resp.status_code == 200
+    assert resp.json()["calendar"][0]["items"][0]["code"] == "7203"
+
+
+def test_earnings_calendar_domestic_manifest(client):
+    payload = {
+        "as_of_date": "2026-04-24",
+        "current_window": {"from": "2026-04-01", "to": "2026-05-31"},
+        "months": [
+            {"id": "2026-05", "year": 2026, "month": 5, "path": "monthly/2026-05.json", "partial": False, "bucket": "future"}
+        ],
+    }
+    with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/earnings-calendar/domestic/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["months"][0]["id"] == "2026-05"
+
+
+def test_earnings_calendar_domestic_monthly(client):
+    payload = {
+        "as_of_date": "2026-04-24",
+        "calendar": [
+            {
+                "date": "2026-05-10",
+                "count": 1,
+                "detail_status": "confirmed",
+                "items": [{"event_id": "d2", "time": "15:00", "code": "6758", "name": "ソニーグループ", "market": "東証プライム", "announcement_type": "本決算", "publish_status": "発表予定", "progress_status": "通常"}],
+            }
+        ],
+    }
+    with patch("app.routers.earnings_calendar.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/earnings-calendar/domestic/monthly/2026-05")
+    assert resp.status_code == 200
+    assert resp.json()["calendar"][0]["items"][0]["code"] == "6758"
+
+
+def test_earnings_calendar_domestic_monthly_invalid_format(client):
+    resp = client.get("/earnings-calendar/domestic/monthly/2026-5")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "year_month must be YYYY-MM format"
+
+
+def test_earnings_calendar_domestic_manifest_not_found(client):
+    request = httpx.Request("GET", "https://r2.example.com/earnings-calendar/domestic/manifest.json")
+    response = httpx.Response(404, request=request)
+    error = httpx.HTTPStatusError("not found", request=request, response=response)
+    with patch("app.routers.earnings_calendar.cache.get_manifest", new=AsyncMock(side_effect=error)):
+        resp = client.get("/earnings-calendar/domestic/manifest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "domestic earnings calendar manifest not found"
+
+
 def test_sbi_credit_latest(client):
     payload = {
         "date": "2026-04-05",
