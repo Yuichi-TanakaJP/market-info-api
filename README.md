@@ -25,6 +25,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /nikkei/{date}` | 指定日の日経寄与度 JSON |
 | `GET /market-calendar/jpx-closed` | JPX 休場日カレンダー |
 | `GET /market-calendar/us-closed` | US 休場日カレンダー |
+| `GET /earnings-calendar/domestic/latest` | 国内決算カレンダー（全件） |
+| `GET /earnings-calendar/domestic/manifest` | 国内決算カレンダー manifest |
+| `GET /earnings-calendar/domestic/monthly/{year_month}` | 指定月の国内決算カレンダー |
 | `GET /earnings-calendar/overseas/latest` | 海外決算カレンダー（全件） |
 | `GET /earnings-calendar/overseas/manifest` | 海外決算カレンダー manifest |
 | `GET /earnings-calendar/overseas/monthly/{year_month}` | 指定月の海外決算カレンダー |
