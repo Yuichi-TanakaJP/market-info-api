@@ -10,6 +10,66 @@ https://market-info-api-619599800912.asia-northeast1.run.app
 
 ## エンドポイント一覧
 
+### 経済指標カレンダー
+
+```
+GET /econ-calendar/weekly
+→ {
+    "as_of_date": "2026-04-29",
+    "source": "sbi_week_daily+with_master",
+    "week_start": "2026-04-27",
+    "week_end": "2026-05-03",
+    "calendar": [
+      {
+        "date": "2026-04-28",
+        "weekday_jp": "火",
+        "events": [
+          {
+            "time": "21:30",
+            "area": "overseas",
+            "country": "米国",
+            "country_tag": "US",
+            "indicator": "非農業部門雇用者数",
+            "indicator_key": "US_NFP_REPORT",
+            "display": "米雇用統計",
+            "category": "employment",
+            "impact": 5,
+            "frequency": "月次",
+            "previous": "15.1万人",
+            "forecast": "17.0万人",
+            "result": "17.7万人"
+          }
+        ]
+      }
+    ]
+  }
+
+GET /econ-calendar/weekly/meta
+→ {
+    "published_at": "2026-04-29T01:00:10Z",
+    "source": "sbi_week_daily+with_master",
+    "week_start": "2026-04-27",
+    "week_end": "2026-05-03",
+    "event_count": 48,
+    "matched_count": 14,
+    "unmatched_count": 34,
+    "actuals_filled": 14,
+    "unmatched_indicators": [...],
+    "diff": {
+      "skipped": false,
+      "removed_count": 0,
+      "added_count": 1,
+      "actuals_updated_count": 3,
+      ...
+    }
+  }
+```
+
+- 更新単位: 平日 1日1回（01:00 UTC）。**ポーリング不要**。
+- `time` フィールドの timezone は JST。
+- `result` が `null` の場合は未発表、文字列の場合は発表済み。
+- `impact` は 1〜5 の整数（5 が最重要）。`null` の場合は重要度不明。
+
 ### ヘルスチェック
 
 ```
@@ -113,10 +173,10 @@ GET /market-calendar/us-closed
 
 ## キャッシュ
 
-| 種別 | TTL |
-|------|-----|
-| manifest | 5分 |
-| 日次データ | 60分 |
+| 種別 | TTL | 対象の例 |
+|------|-----|---------|
+| manifest / latest 系 | 5分 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| 日次・月次データ | 60分 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
 
 ## 関連環境変数
 

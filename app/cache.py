@@ -6,8 +6,8 @@ from typing import Any, Awaitable, Callable
 
 from cachetools import TTLCache
 
-_MANIFEST_TTL = 300   # 5分
-_DAY_TTL = 3600       # 60分
+_MANIFEST_TTL = 21600   # 6時間（可変データ）
+_DAY_TTL = 86400        # 24時間（不変データ）
 
 _manifest_cache: TTLCache = TTLCache(maxsize=16, ttl=_MANIFEST_TTL)
 _day_cache: TTLCache = TTLCache(maxsize=128, ttl=_DAY_TTL)

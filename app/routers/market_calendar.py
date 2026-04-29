@@ -36,7 +36,7 @@ class MarketCalendar(BaseModel):
 async def get_jpx_closed() -> dict:
     """JPX 休場日の thin JSON を返す。
 
-    更新単位: 不定期（年次カレンダー更新時）。
+    更新単位: 不定期（年次カレンダー更新時）。キャッシュ TTL: 6時間（可変）。
     mini-tools はこのデータを使って営業日判定を行う。
     """
     try:
@@ -64,7 +64,7 @@ async def get_jpx_closed() -> dict:
 async def get_us_closed() -> dict:
     """US 休場日の thin JSON を返す。
 
-    更新単位: 不定期（年次カレンダー更新時）。
+    更新単位: 不定期（年次カレンダー更新時）。キャッシュ TTL: 6時間（可変）。
     mini-tools はこのデータを使って営業日判定を行う。
     """
     try:

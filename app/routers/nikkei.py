@@ -65,7 +65,7 @@ async def get_manifest() -> dict:
     - `latest_date`: 最新日付（YYYY-MM-DD）
     - `dates`: 利用可能な日付の一覧
 
-    更新単位: 営業日ごと。
+    更新単位: 営業日ごと。キャッシュ TTL: 6時間（可変）。
     """
     try:
         return await cache.get_manifest(
@@ -91,7 +91,7 @@ async def get_day(date: str) -> dict:
     - `date`: 対象日（YYYY-MM-DD）
     - `records`: 銘柄ごとの寄与度データ配列
 
-    404 の場合: 休場日・未来日・バッチ未実行日のいずれか。
+    404 の場合: 休場日・未来日・バッチ未実行日のいずれか。キャッシュ TTL: 24時間（不変）。
     """
     file_name = f"nikkei_contribution_{date}.json"
     try:
