@@ -36,6 +36,8 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /nikko/credit` | 日興証券 信用取引取扱銘柄一覧 |
 | `GET /yutai/manifest` | 優待データ manifest |
 | `GET /yutai/monthly/{year_month}` | 指定月の優待データ |
+| `GET /econ-calendar/weekly` | 今週の経済指標カレンダー |
+| `GET /econ-calendar/weekly/meta` | 経済指標カレンダー更新メタ情報 |
 
 ---
 
@@ -82,7 +84,8 @@ curl http://localhost:8000/market-calendar/us-closed
 
 | 種別 | TTL |
 |------|-----|
-| manifest 系 | 5 分 |
-| 日次・月次データ | 60 分 |
+| 可変データ（latest / manifest 系） | 6 時間 |
+| 不変データ（過去日次・月次） | 24 時間 |
 
-インプロセスキャッシュのため、デプロイ（再起動）でリセットされる。
+インプロセスキャッシュのため、デプロイ（再起動）でリセットされる。  
+TTL 設計ルールの詳細は [`docs/api-contract.md`](docs/api-contract.md) を参照。
