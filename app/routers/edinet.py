@@ -47,7 +47,7 @@ async def get_latest() -> dict:
     - `total_count`: 提出書類の総件数
     - `items`: 書類エントリの配列
 
-    更新単位: 平日 1日1回。週末・祝日は件数 0 になる場合がある。キャッシュ TTL: 5分。
+    更新単位: 平日 1日1回。週末・祝日は件数 0 になる場合がある。キャッシュ TTL: 6時間（可変）。
     """
     try:
         return await cache.get_manifest(
@@ -72,7 +72,7 @@ async def get_by_date(date: str) -> dict:
     """YYYY-MM-DD 形式の日付に対応する EDINET 提出書類一覧を返す。
 
     404 の場合: 指定日のデータが存在しない（未取得日・休日など）。
-    422 の場合: date が YYYY-MM-DD 形式でない。キャッシュ TTL: 60分。
+    422 の場合: date が YYYY-MM-DD 形式でない。キャッシュ TTL: 24時間（不変）。
     """
     if not _DATE_RE.match(date):
         raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD format")
