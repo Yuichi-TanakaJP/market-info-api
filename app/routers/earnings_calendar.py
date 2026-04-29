@@ -144,7 +144,7 @@ async def get_overseas_latest() -> dict:
     """海外決算カレンダー全件スナップショット (latest.json) を返す。
 
     全件を一括で返す。月別に分割して取得したい場合は manifest + monthly エンドポイントを使うこと。
-    更新単位: 不定期（決算データ更新時）。
+    更新単位: 不定期（決算データ更新時）。キャッシュ TTL: 5分。
     """
     return await _get_latest(_OVERSEAS_PREFIX, "overseas")
 
@@ -182,7 +182,7 @@ async def get_overseas_monthly(year_month: str) -> dict:
     """YYYY-MM 形式の月に対応する海外決算カレンダー JSON を返す。
 
     422 の場合: year_month が YYYY-MM 形式でない。
-    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。
+    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。キャッシュ TTL: 60分。
     """
     return await _get_monthly(_OVERSEAS_PREFIX, "overseas", year_month)
 
@@ -200,7 +200,7 @@ async def get_domestic_latest() -> dict:
     """国内決算カレンダー全件スナップショット (latest.json) を返す。
 
     全件を一括で返す。月別に分割して取得したい場合は manifest + monthly エンドポイントを使うこと。
-    更新単位: 不定期（決算データ更新時）。
+    更新単位: 不定期（決算データ更新時）。キャッシュ TTL: 5分。
     """
     return await _get_latest(_DOMESTIC_PREFIX, "domestic")
 
@@ -238,6 +238,6 @@ async def get_domestic_monthly(year_month: str) -> dict:
     """YYYY-MM 形式の月に対応する国内決算カレンダー JSON を返す。
 
     422 の場合: year_month が YYYY-MM 形式でない。
-    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。
+    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。キャッシュ TTL: 60分。
     """
     return await _get_monthly(_DOMESTIC_PREFIX, "domestic", year_month)

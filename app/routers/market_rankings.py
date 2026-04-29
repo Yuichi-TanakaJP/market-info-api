@@ -103,7 +103,7 @@ async def get_market_cap_manifest() -> dict:
     - `latest`: 最新月（YYYY-MM）
     - `months`: 利用可能な月の降順リスト
 
-    更新単位: 月次。
+    更新単位: 月次。キャッシュ TTL: 5分。
     """
     return await _get_manifest(_MARKET_CAP_PREFIX)
 
@@ -123,7 +123,7 @@ async def get_market_cap_month(year_month: str) -> dict:
     - `month`: 対象月（YYYY-MM）
     - `markets.prime / standard / growth`: 各市場の上位 100 件
 
-    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。
+    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。キャッシュ TTL: 60分。
     """
     return await _get_month(_MARKET_CAP_PREFIX, year_month)
 
@@ -147,7 +147,7 @@ async def get_dividend_yield_manifest() -> dict:
     - `latest`: 最新月（YYYY-MM）
     - `months`: 利用可能な月の降順リスト
 
-    更新単位: 月次。
+    更新単位: 月次。キャッシュ TTL: 5分。
     """
     return await _get_manifest(_DIVIDEND_YIELD_PREFIX)
 
@@ -167,6 +167,6 @@ async def get_dividend_yield_month(year_month: str) -> dict:
     - `month`: 対象月（YYYY-MM）
     - `markets.prime / standard / growth`: 各市場の上位 100 件
 
-    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。
+    404 の場合: 指定月のデータが存在しない。manifest の `months` に含まれる月のみリクエストすること。キャッシュ TTL: 60分。
     """
     return await _get_month(_DIVIDEND_YIELD_PREFIX, year_month)

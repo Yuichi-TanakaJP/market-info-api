@@ -41,7 +41,7 @@ class SbiCredit(BaseModel):
 async def get_credit_latest() -> dict:
     """SBI 証券の信用取引データ latest.json を返す。
 
-    更新単位: 週次（SBI の信用残高更新に合わせて market_info が publish）。
+    更新単位: 週次（SBI の信用残高更新に合わせて market_info が publish）。キャッシュ TTL: 5分。
     """
     try:
         return await cache.get_manifest(
@@ -68,7 +68,7 @@ async def get_credit_monthly(year_month: str) -> dict:
     """YYYY-MM 形式の月に対応する SBI 信用取引データ JSON を返す。
 
     - `year_month`: 対象月（YYYY-MM）
-    404 の場合: 指定月のデータが存在しない。
+    404 の場合: 指定月のデータが存在しない。キャッシュ TTL: 60分。
     """
     try:
         return await cache.get_day(

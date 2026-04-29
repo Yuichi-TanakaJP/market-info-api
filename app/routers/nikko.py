@@ -38,7 +38,7 @@ async def get_credit() -> dict:
 
     - `by_code`: 証券コードをキーとした辞書形式。クライアントは `by_code[code]` で O(1) 参照できる。
 
-    更新単位: 不定期（銘柄追加・除外時）。
+    更新単位: 不定期（銘柄追加・除外時）。キャッシュ TTL: 5分。
     """
     try:
         return await cache.get_manifest(

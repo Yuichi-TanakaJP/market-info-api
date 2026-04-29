@@ -62,7 +62,7 @@ async def get_manifest() -> dict:
     - `latest_date`: 最新日付（YYYY-MM-DD）
     - `dates`: 利用可能な日付の一覧
 
-    更新単位: 営業日ごと。
+    更新単位: 営業日ごと。キャッシュ TTL: 5分。
     """
     try:
         return await cache.get_manifest(
@@ -88,7 +88,7 @@ async def get_day(date: str) -> dict:
     - `date`: 対象日（YYYY-MM-DD）
     - `sectors`: 33業種ごとの騰落率データ
 
-    404 の場合: 休場日・未来日・バッチ未実行日のいずれか。
+    404 の場合: 休場日・未来日・バッチ未実行日のいずれか。キャッシュ TTL: 60分。
     """
     file_name = f"topix33_{date}.json"
     try:

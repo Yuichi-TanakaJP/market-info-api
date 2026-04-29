@@ -50,6 +50,8 @@ API 側はフォーマット検証を行わず、不正な形式の場合は R2 
 
 | エンドポイントグループ | 更新タイミング | 備考 |
 |------------------------|----------------|------|
+| `/econ-calendar/weekly` | 平日 1日1回（01:00 UTC） | 実績値マージ後に publish。**ポーリング不要** |
+| `/econ-calendar/weekly/meta` | 平日 1日1回（01:00 UTC） | 同上 |
 | `/ranking/*` | 営業日ごと | market_info の日次バッチ完了後 |
 | `/topix33/*` | 営業日ごと | 同上 |
 | `/nikkei/*` | 営業日ごと | 同上 |
@@ -57,6 +59,7 @@ API 側はフォーマット検証を行わず、不正な形式の場合は R2 
 | `/market-calendar/us-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
 | `/earnings-calendar/domestic/*` | 不定期 | 決算データ更新時 |
 | `/earnings-calendar/overseas/*` | 不定期 | 決算データ更新時 |
+| `/edinet/document-list/*` | 平日 1日1回 | 週末・祝日は件数 0 の場合あり |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/*` | 月次 | 月初に publish |
@@ -186,8 +189,16 @@ FastAPI の response validation による 500 が発生した。
 ## キャッシュ
 
 manifest 系・日次/月次データ系ともに TTL キャッシュが入っている。  
-TTL の値は `app/cache.py` を参照。  
 テスト時は R2 への実リクエストをモックするか、キャッシュをクリアして確認すること。
+
+| キャッシュ種別 | TTL | 対象 |
+|---|---|---|
+| manifest キャッシュ | **5分** | `get_manifest()` を使うエンドポイント（manifest / latest 系） |
+| day キャッシュ | **60分** | `get_day()` を使うエンドポイント（日次・月次データ） |
+
+TTL の実装は `app/cache.py` の `_MANIFEST_TTL` / `_DAY_TTL` を参照。
+
+> **ポーリング実装時の注意**: 全データは最短でも 1日1回の更新。キャッシュ TTL より短い間隔でポーリングしても同じレスポンスが返る。特に `/econ-calendar/weekly` は 1日1回更新のため、ポーリングは不要。
 
 ### 設計根拠: `_locks` に `defaultdict` を採用した理由
 

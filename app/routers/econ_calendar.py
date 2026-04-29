@@ -89,7 +89,10 @@ class EconWeeklyMeta(BaseModel):
 async def get_weekly() -> dict:
     """今週分の経済指標カレンダー（latest.json）を返す。
 
-    更新単位: 平日毎日 01:00 UTC（実績値マージ後）。
+    更新単位: 平日 1日1回（01:00 UTC）。キャッシュ TTL: 5分。
+
+    **ポーリング不要** — データは 1日に 1度しか更新されない。
+    ページロード時の 1回取得で十分。
     """
     try:
         return await cache.get_manifest(
@@ -110,7 +113,7 @@ async def get_weekly_meta() -> dict:
     """今週分の publish メタ情報（latest_meta.json）を返す。
 
     diff（前回との差分）・統計カウント・未マッチ指標リストを含む。
-    更新単位: 平日毎日 01:00 UTC。
+    更新単位: 平日 1日1回（01:00 UTC）。キャッシュ TTL: 5分。
     """
     try:
         return await cache.get_manifest(
