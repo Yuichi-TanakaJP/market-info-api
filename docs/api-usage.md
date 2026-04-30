@@ -141,6 +141,120 @@ GET /nikko/credit
   }
 ```
 
+### 株式ランキング（米国）
+
+```
+GET /us-ranking/manifest
+→ {"dates": ["2026-04-28", ...], "latest": "2026-04-28"}
+
+GET /us-ranking/{date}         # date: YYYY-MM-DD
+→ {
+    "date": "2026-04-28",
+    "records": [
+      {
+        "exchange": "NYSE",
+        "ranking": "volume",
+        "rank": 1,
+        "ticker": "NVDA",
+        ...
+      }
+    ]
+  }
+```
+
+### SBI 信用
+
+```
+GET /sbi/credit/latest
+→ {
+    "date": "2026-04-25",
+    "generated_at": "...",
+    "record_count": 1234,
+    "by_code": {
+      "1234": {
+        "position_status": "...",
+        "unit_upper_limit": "...",
+        "is_hyper": false,
+        "is_daily": true,
+        "is_short": false
+      }
+    }
+  }
+
+GET /sbi/credit/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as /sbi/credit/latest）
+```
+
+### 決算カレンダー
+
+```
+GET /earnings-calendar/overseas/latest
+→ {"as_of_date": "...", "records": [...]}
+
+GET /earnings-calendar/overseas/manifest
+→ {
+    "as_of_date": "2026-04-28",
+    "current_window": {"from": "2026-04-01", "to": "2026-06-30"},
+    "months": [{"id": "2026-04", "year": 2026, "month": 4, "path": "monthly/2026-04.json", "partial": false, "bucket": "current"}, ...]
+  }
+
+GET /earnings-calendar/overseas/monthly/{year_month}    # year_month: YYYY-MM
+→ {"as_of_date": "...", "records": [...]}
+
+GET /earnings-calendar/domestic/latest
+→ {"as_of_date": "...", "records": [...]}
+
+GET /earnings-calendar/domestic/manifest
+→ （same shape as overseas manifest）
+
+GET /earnings-calendar/domestic/monthly/{year_month}    # year_month: YYYY-MM
+→ {"as_of_date": "...", "records": [...]}
+```
+
+### マーケットランキング
+
+```
+GET /market-rankings/market-cap/manifest
+→ {"latest": "2026-04", "months": ["2026-04", ...], "generatedAt": "..."}
+
+GET /market-rankings/market-cap/monthly/{year_month}    # year_month: YYYY-MM
+→ {
+    "month": "2026-04",
+    "markets": {
+      "prime": [...],
+      "standard": [...],
+      "growth": [...]
+    }
+  }
+
+GET /market-rankings/dividend-yield/manifest
+→ （same shape as market-cap manifest）
+
+GET /market-rankings/dividend-yield/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as market-cap monthly）
+```
+
+### EDINET書類一覧
+
+```
+GET /edinet/document-list/latest
+→ {
+    "as_of_date": "2026-04-28",
+    "total_count": 42,
+    "items": [
+      {
+        "doc_id": "S100XXXX",
+        "submit_datetime": "2026-04-28T09:00:00",
+        "edinet_code": "E12345",
+        ...
+      }
+    ]
+  }
+
+GET /edinet/document-list/{date}    # date: YYYY-MM-DD
+→ （same shape as /edinet/document-list/latest）
+```
+
 ### JPX休場日
 
 ```
@@ -175,8 +289,8 @@ GET /market-calendar/us-closed
 
 | 種別 | TTL | 対象の例 |
 |------|-----|---------|
-| manifest / latest 系 | 5分 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
-| 日次・月次データ | 60分 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
+| manifest / latest 系 | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| 日次・月次データ | 24時間 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
 
 ## 関連環境変数
 
@@ -201,6 +315,13 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/us-closed
+curl https://market-info-api-619599800912.asia-northeast1.run.app/us-ranking/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/sbi/credit/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calendar/domestic/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calendar/overseas/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/market-cap/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/dividend-yield/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
 ```
 
 `/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照する。

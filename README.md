@@ -36,6 +36,14 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /nikko/credit` | 日興証券 信用取引取扱銘柄一覧 |
 | `GET /yutai/manifest` | 優待データ manifest |
 | `GET /yutai/monthly/{year_month}` | 指定月の優待データ |
+| `GET /us-ranking/manifest` | 米国株ランキング manifest |
+| `GET /us-ranking/{date}` | 指定日の米国株ランキング JSON |
+| `GET /market-rankings/market-cap/manifest` | 時価総額ランキング manifest |
+| `GET /market-rankings/market-cap/monthly/{year_month}` | 指定月の時価総額ランキング |
+| `GET /market-rankings/dividend-yield/manifest` | 配当利回りランキング manifest |
+| `GET /market-rankings/dividend-yield/monthly/{year_month}` | 指定月の配当利回りランキング |
+| `GET /edinet/document-list/latest` | EDINET 書類一覧（最新） |
+| `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
 | `GET /econ-calendar/weekly` | 今週の経済指標カレンダー |
 | `GET /econ-calendar/weekly/meta` | 経済指標カレンダー更新メタ情報 |
 
