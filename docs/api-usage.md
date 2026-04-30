@@ -156,7 +156,18 @@ GET /us-ranking/{date}         # date: YYYY-MM-DD
         "ranking": "volume",
         "rank": 1,
         "ticker": "NVDA",
-        ...
+        "listingExchange": "NASDAQ",
+        "handlingFlag": null,
+        "name": "エヌビディア",
+        "nameEn": "NVIDIA Corp",
+        "price": 875.4,
+        "time": "16:00",
+        "change": 12.3,
+        "changeRate": 1.42,
+        "volume": 45000000.0,
+        "tradedValue": null,
+        "per": null,
+        "pbr": null
       }
     ]
   }
@@ -172,11 +183,12 @@ GET /sbi/credit/latest
     "record_count": 1234,
     "by_code": {
       "1234": {
-        "position_status": "...",
-        "unit_upper_limit": "...",
+        "position_status": "可能",
+        "unit_upper_limit": "3000",
         "is_hyper": false,
         "is_daily": true,
-        "is_short": false
+        "is_short": false,
+        "is_long": true
       }
     }
   }
@@ -189,7 +201,29 @@ GET /sbi/credit/monthly/{year_month}    # year_month: YYYY-MM
 
 ```
 GET /earnings-calendar/overseas/latest
-→ {"as_of_date": "...", "records": [...]}
+→ {
+    "as_of_date": "2026-04-28",
+    "calendar": [
+      {
+        "date": "2026-04-29",
+        "count": 3,
+        "detail_status": "full",
+        "items": [
+          {
+            "event_id": "EV001",
+            "local_time": "16:00",
+            "ticker": "AAPL",
+            "stock_name": "Apple Inc",
+            "exchange_code": "NASDAQ",
+            "fiscal_term": "2026Q1",
+            "fiscal_term_name": "2026年第1四半期",
+            "sch_flg": "1",
+            "country_code": "US"
+          }
+        ]
+      }
+    ]
+  }
 
 GET /earnings-calendar/overseas/manifest
 → {
@@ -199,16 +233,37 @@ GET /earnings-calendar/overseas/manifest
   }
 
 GET /earnings-calendar/overseas/monthly/{year_month}    # year_month: YYYY-MM
-→ {"as_of_date": "...", "records": [...]}
+→ （same shape as /earnings-calendar/overseas/latest）
 
 GET /earnings-calendar/domestic/latest
-→ {"as_of_date": "...", "records": [...]}
+→ {
+    "as_of_date": "2026-04-28",
+    "calendar": [
+      {
+        "date": "2026-04-29",
+        "count": 5,
+        "detail_status": "full",
+        "items": [
+          {
+            "event_id": "EV002",
+            "time": "15:30",
+            "code": "7203",
+            "name": "トヨタ自動車",
+            "market": "プライム",
+            "announcement_type": "本決算",
+            "publish_status": "確定",
+            "progress_status": "発表済"
+          }
+        ]
+      }
+    ]
+  }
 
 GET /earnings-calendar/domestic/manifest
 → （same shape as overseas manifest）
 
 GET /earnings-calendar/domestic/monthly/{year_month}    # year_month: YYYY-MM
-→ {"as_of_date": "...", "records": [...]}
+→ （same shape as /earnings-calendar/domestic/latest）
 ```
 
 ### マーケットランキング
@@ -220,10 +275,27 @@ GET /market-rankings/market-cap/manifest
 GET /market-rankings/market-cap/monthly/{year_month}    # year_month: YYYY-MM
 → {
     "month": "2026-04",
+    "generatedAt": "2026-04-30T01:00:00Z",
     "markets": {
-      "prime": [...],
-      "standard": [...],
-      "growth": [...]
+      "prime": {
+        "date": "2026-04-30",
+        "records": [
+          {
+            "rank": 1,
+            "code": "7203",
+            "name": "トヨタ自動車",
+            "industry": "輸送用機器",
+            "marketCapOkuYen": 350000.0,
+            "price": 2800.0,
+            "priceTime": "2026-04-30T15:30:00",
+            "changeAmount": 30.0,
+            "changeRate": 1.08,
+            "dividendYieldPct": null
+          }
+        ]
+      },
+      "standard": {"date": "2026-04-30", "records": [...]},
+      "growth": {"date": "2026-04-30", "records": [...]}
     }
   }
 
@@ -246,7 +318,13 @@ GET /edinet/document-list/latest
         "doc_id": "S100XXXX",
         "submit_datetime": "2026-04-28T09:00:00",
         "edinet_code": "E12345",
-        ...
+        "sec_code": "72030",
+        "filer_name": "トヨタ自動車株式会社",
+        "doc_type_code": "120",
+        "doc_description": "有価証券報告書",
+        "has_xbrl": true,
+        "has_pdf": true,
+        "has_csv": false
       }
     ]
   }
