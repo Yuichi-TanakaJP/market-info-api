@@ -53,6 +53,7 @@ API 側はフォーマット検証を行わず、不正な形式の場合は R2 
 | `/econ-calendar/weekly` | 平日 1日1回（01:00 UTC） | 実績値マージ後に publish。**ポーリング不要** |
 | `/econ-calendar/weekly/meta` | 平日 1日1回（01:00 UTC） | 同上 |
 | `/ranking/*` | 営業日ごと | market_info の日次バッチ完了後 |
+| `/us-ranking/*` | 営業日ごと | 同上 |
 | `/topix33/*` | 営業日ごと | 同上 |
 | `/nikkei/*` | 営業日ごと | 同上 |
 | `/market-calendar/jpx-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
