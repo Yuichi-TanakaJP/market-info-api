@@ -137,7 +137,15 @@ GET /nikko/credit
     "date": "2026-04-04",
     "generated_at": "...",
     "record_count": 4243,
-    "by_code": {...}
+    "by_code": {
+      "7203": {
+        "institutional_buy": true,
+        "institutional_short": true,
+        "general_buy": true,
+        "general_short": false,
+        "available_shares": 10000
+      }
+    }
   }
 ```
 
