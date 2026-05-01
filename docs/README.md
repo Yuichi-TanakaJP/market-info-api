@@ -22,7 +22,8 @@ market-info-api のドキュメント置き場。
 
 | 置く場所 | 内容 |
 |----------|------|
-| `docs/` | API 仕様・運用・デプロイ・migration ガイド |
+| `docs/` | API 仕様・運用・デプロイガイド |
+| `docs/history/` | 完了済みの移行手順・廃止ドキュメント |
 | `app/` | 実装コード（仕様の一次情報源は OpenAPI） |
 
 「なぜこの TTL にしたか」「なぜこの Pydantic 型か」などの **設計根拠** は `api-contract.md` に追記する。  
