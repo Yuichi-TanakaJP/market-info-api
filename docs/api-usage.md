@@ -141,6 +141,198 @@ GET /nikko/credit
   }
 ```
 
+### 株式ランキング（米国）
+
+```
+GET /us-ranking/manifest
+→ {"dates": ["2026-04-28", ...], "latest": "2026-04-28"}
+
+GET /us-ranking/{date}         # date: YYYY-MM-DD
+→ {
+    "date": "2026-04-28",
+    "records": [
+      {
+        "exchange": "NYSE",
+        "ranking": "volume",
+        "rank": 1,
+        "ticker": "NVDA",
+        "listingExchange": "NASDAQ",
+        "handlingFlag": null,
+        "name": "エヌビディア",
+        "nameEn": "NVIDIA Corp",
+        "price": 875.4,
+        "time": "16:00",
+        "change": 12.3,
+        "changeRate": 1.42,
+        "volume": 45000000.0,
+        "tradedValue": null,
+        "per": null,
+        "pbr": null
+      }
+    ]
+  }
+```
+
+### SBI 信用
+
+```
+GET /sbi/credit/latest
+→ {
+    "date": "2026-04-25",
+    "generated_at": "...",
+    "record_count": 1234,
+    "by_code": {
+      "1234": {
+        "position_status": "可能",
+        "unit_upper_limit": "3000",
+        "is_hyper": false,
+        "is_daily": true,
+        "is_short": false,
+        "is_long": true
+      }
+    }
+  }
+
+GET /sbi/credit/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as /sbi/credit/latest）
+```
+
+### 決算カレンダー
+
+```
+GET /earnings-calendar/overseas/latest
+→ {
+    "as_of_date": "2026-04-28",
+    "calendar": [
+      {
+        "date": "2026-04-29",
+        "count": 3,
+        "detail_status": "full",
+        "items": [
+          {
+            "event_id": "EV001",
+            "local_time": "16:00",
+            "ticker": "AAPL",
+            "stock_name": "Apple Inc",
+            "exchange_code": "NASDAQ",
+            "fiscal_term": "2026Q1",
+            "fiscal_term_name": "2026年第1四半期",
+            "sch_flg": "1",
+            "country_code": "US"
+          }
+        ]
+      }
+    ]
+  }
+
+GET /earnings-calendar/overseas/manifest
+→ {
+    "as_of_date": "2026-04-28",
+    "current_window": {"from": "2026-04-01", "to": "2026-06-30"},
+    "months": [{"id": "2026-04", "year": 2026, "month": 4, "path": "monthly/2026-04.json", "partial": false, "bucket": "current"}, ...]
+  }
+
+GET /earnings-calendar/overseas/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as /earnings-calendar/overseas/latest）
+
+GET /earnings-calendar/domestic/latest
+→ {
+    "as_of_date": "2026-04-28",
+    "calendar": [
+      {
+        "date": "2026-04-29",
+        "count": 5,
+        "detail_status": "full",
+        "items": [
+          {
+            "event_id": "EV002",
+            "time": "15:30",
+            "code": "7203",
+            "name": "トヨタ自動車",
+            "market": "プライム",
+            "announcement_type": "本決算",
+            "publish_status": "確定",
+            "progress_status": "発表済"
+          }
+        ]
+      }
+    ]
+  }
+
+GET /earnings-calendar/domestic/manifest
+→ （same shape as overseas manifest）
+
+GET /earnings-calendar/domestic/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as /earnings-calendar/domestic/latest）
+```
+
+### マーケットランキング
+
+```
+GET /market-rankings/market-cap/manifest
+→ {"latest": "2026-04", "months": ["2026-04", ...], "generatedAt": "..."}
+
+GET /market-rankings/market-cap/monthly/{year_month}    # year_month: YYYY-MM
+→ {
+    "month": "2026-04",
+    "generatedAt": "2026-04-30T01:00:00Z",
+    "markets": {
+      "prime": {
+        "date": "2026-04-30",
+        "records": [
+          {
+            "rank": 1,
+            "code": "7203",
+            "name": "トヨタ自動車",
+            "industry": "輸送用機器",
+            "marketCapOkuYen": 350000.0,
+            "price": 2800.0,
+            "priceTime": "2026-04-30T15:30:00",
+            "changeAmount": 30.0,
+            "changeRate": 1.08,
+            "dividendYieldPct": null
+          }
+        ]
+      },
+      "standard": {"date": "2026-04-30", "records": [...]},
+      "growth": {"date": "2026-04-30", "records": [...]}
+    }
+  }
+
+GET /market-rankings/dividend-yield/manifest
+→ （same shape as market-cap manifest）
+
+GET /market-rankings/dividend-yield/monthly/{year_month}    # year_month: YYYY-MM
+→ （same shape as market-cap monthly）
+```
+
+### EDINET書類一覧
+
+```
+GET /edinet/document-list/latest
+→ {
+    "as_of_date": "2026-04-28",
+    "total_count": 42,
+    "items": [
+      {
+        "doc_id": "S100XXXX",
+        "submit_datetime": "2026-04-28T09:00:00",
+        "edinet_code": "E12345",
+        "sec_code": "72030",
+        "filer_name": "トヨタ自動車株式会社",
+        "doc_type_code": "120",
+        "doc_description": "有価証券報告書",
+        "has_xbrl": true,
+        "has_pdf": true,
+        "has_csv": false
+      }
+    ]
+  }
+
+GET /edinet/document-list/{date}    # date: YYYY-MM-DD
+→ （same shape as /edinet/document-list/latest）
+```
+
 ### JPX休場日
 
 ```
@@ -175,8 +367,8 @@ GET /market-calendar/us-closed
 
 | 種別 | TTL | 対象の例 |
 |------|-----|---------|
-| manifest / latest 系 | 5分 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
-| 日次・月次データ | 60分 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
+| manifest / latest 系 | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| 日次・月次データ | 24時間 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
 
 ## 関連環境変数
 
@@ -201,6 +393,13 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/us-closed
+curl https://market-info-api-619599800912.asia-northeast1.run.app/us-ranking/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/sbi/credit/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calendar/domestic/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calendar/overseas/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/market-cap/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/dividend-yield/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
 ```
 
 `/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照する。
