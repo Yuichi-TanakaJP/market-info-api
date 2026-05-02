@@ -34,6 +34,11 @@ class EdinetDocumentList(BaseModel):
     items: list[EdinetItem]
 
 
+class EdinetManifest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    dates: list[str]
+
+
 @router.get(
     "/document-list/latest",
     response_model=EdinetDocumentList,
@@ -53,6 +58,28 @@ async def get_latest() -> dict:
         return await cache.get_manifest(
             f"{_PREFIX}/latest",
             lambda: r2.fetch_json(f"{_PREFIX}/latest.json"),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/document-list/manifest",
+    response_model=EdinetManifest,
+    summary="EDINET書類一覧 manifest を取得",
+    responses={502: {"description": "R2 からの取得失敗"}},
+)
+async def get_manifest() -> dict:
+    """データが存在する日付の一覧を返す。
+
+    - `dates`: total_count > 0 の日付文字列配列（YYYY-MM-DD、昇順）
+
+    キャッシュ TTL: 6時間（可変）。
+    """
+    try:
+        return await cache.get_manifest(
+            f"{_PREFIX}/manifest",
+            lambda: r2.fetch_json(f"{_PREFIX}/manifest.json"),
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
