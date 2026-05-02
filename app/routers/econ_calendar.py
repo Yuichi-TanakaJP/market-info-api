@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -9,6 +11,8 @@ router = APIRouter(prefix="/econ-calendar", tags=["econ-calendar"])
 
 _LATEST_KEY = "econ-calendar/weekly/latest.json"
 _META_KEY = "econ-calendar/weekly/latest_meta.json"
+_MANIFEST_KEY = "econ-calendar/weekly/manifest.json"
+_WEEK_START_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
 
 
 class EconEvent(BaseModel):
@@ -80,6 +84,12 @@ class EconWeeklyMeta(BaseModel):
     diff: DiffResult | None = None
 
 
+class EconWeeklyManifest(BaseModel):
+    weeks: list[str]
+    latest: str
+    generated_at: str
+
+
 @router.get(
     "/weekly",
     response_model=EconWeeklyLatest,
@@ -119,4 +129,58 @@ async def get_weekly_meta() -> dict:
             lambda: r2.fetch_json(_META_KEY),
         )
     except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/weekly/manifest",
+    response_model=EconWeeklyManifest,
+    summary="利用可能な週一覧を取得",
+    responses={502: {"description": "R2 からの取得失敗"}},
+)
+async def get_weekly_manifest() -> dict:
+    """過去週を含む利用可能な週一覧（manifest.json）を返す。
+
+    - `weeks`: 利用可能な week_start 日付の配列（YYYY-MM-DD、降順）
+    - `latest`: 最新の week_start
+    - `generated_at`: manifest 生成日時（UTC ISO 8601）
+
+    キャッシュ TTL: 6時間（可変）。
+    """
+    try:
+        return await cache.get_manifest(
+            "econ-calendar/weekly/manifest",
+            lambda: r2.fetch_json(_MANIFEST_KEY),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/weekly/{week_start}",
+    response_model=EconWeeklyLatest,
+    summary="指定週の経済指標カレンダーを取得",
+    responses={
+        404: {"description": "指定週のデータが R2 に存在しない"},
+        422: {"description": "week_start が YYYY-MM-DD 形式でない"},
+        502: {"description": "R2 からの取得失敗"},
+    },
+)
+async def get_weekly_by_week(week_start: str) -> dict:
+    """YYYY-MM-DD 形式の週開始日に対応する経済指標カレンダーを返す。
+
+    404 の場合: 指定週のデータが存在しない（未取得週など）。
+    422 の場合: week_start が YYYY-MM-DD 形式でない。キャッシュ TTL: 24時間（不変）。
+    """
+    if not _WEEK_START_RE.match(week_start):
+        raise HTTPException(status_code=422, detail="week_start must be YYYY-MM-DD format")
+    try:
+        return await cache.get_day(
+            f"econ-calendar/weekly/{week_start}",
+            lambda: r2.fetch_json(f"econ-calendar/weekly/{week_start}.json"),
+        )
+    except Exception as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 404:
+            raise HTTPException(status_code=404, detail=f"week not found: {week_start}") from exc
         raise HTTPException(status_code=502, detail=str(exc)) from exc
