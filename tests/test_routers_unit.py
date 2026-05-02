@@ -632,6 +632,21 @@ def test_edinet_document_list_latest_502(client):
     assert resp.status_code == 502
 
 
+def test_edinet_document_list_manifest(client):
+    manifest = {"dates": ["2026-04-21", "2026-04-22", "2026-04-23"]}
+    with patch("app.routers.edinet.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/edinet/document-list/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["dates"] == ["2026-04-21", "2026-04-22", "2026-04-23"]
+
+
+def test_edinet_document_list_manifest_502(client):
+    err = _make_http_error("https://r2.example.com/edinet/document-list/manifest.json", 500)
+    with patch("app.routers.edinet.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/edinet/document-list/manifest")
+    assert resp.status_code == 502
+
+
 def test_edinet_document_list_by_date_invalid_format(client):
     resp = client.get("/edinet/document-list/20260423")
     assert resp.status_code == 422
