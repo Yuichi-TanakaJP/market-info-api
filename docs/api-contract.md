@@ -188,6 +188,47 @@ FastAPI の response validation による 500 が発生した。
 
 ---
 
+## 2026-05-03 yutai R2 パス不一致調査（Claude Code による判断）
+
+**調査日**: 2026-05-03  
+**判断者**: Claude Code（claude-sonnet-4-6）  
+**ステータス**: API 修正待ち（`_PREFIX` 変更で解消見込み）
+
+### 事象
+
+mini-tools の優待ツールが `generated_at: 2026/03/29 01:58` と古い日付を表示していた。
+
+### 調査結果
+
+R2 上に **2つの独立したパスが存在する**ことを確認した。
+
+| R2 パス | manifest generated_at | 月別ファイル状態 |
+|---|---|---|
+| `yutai/` | 2026-05-02T12:20:54Z ✅ | 全12ヶ月 HTTP 200（05〜08は5/2更新） |
+| `yutai/monthly/` | 2026-03-29T00:39:57Z ❌ | 全12ヶ月 HTTP 200（全部3/28のまま） |
+
+- `market_info` の publish パイプラインは `YUTAI_PUBLISH_PREFIX=yutai`（システム環境変数）で動いており、**`yutai/` に正常に書き続けている**。2026-05-02にも実行済み。
+- `market-info-api` の `app/routers/yutai.py` の `_PREFIX = "yutai/monthly"` が古いパスを指しているため、新しいデータが届いていない。
+- `yutai/monthly/` は過去に別の prefix 設定で書かれたと推定される。現在は誰も更新していない。
+
+### Claude Code の判断根拠
+
+`app/routers/yutai.py:10` の `_PREFIX` を `"yutai/monthly"` → `"yutai"` に変更することを推奨する。
+
+**根拠として確認した事実：**
+1. `yutai/` に全12ヶ月（2026-01〜2026-12）が存在し全て HTTP 200 を返すことを curl で直接確認した
+2. `market_info` の環境変数 `YUTAI_PUBLISH_PREFIX=yutai` が設定済みであり、今後の publish も `yutai/` に書き続ける
+3. `yutai/monthly/` を更新する publish 設定は現在存在しない（放棄済みパス）
+
+**この判断はあくまで Claude Code による調査に基づくもの。** 修正前に人間によるレビューを推奨する。
+
+### リスク
+
+- `yutai/` の全月データが本当に正しい内容かどうかは、ファイルの存在と `generated_at` 以上の内容検証は行っていない
+- `YUTAI_PUBLISH_PREFIX` が将来変更された場合、同じ問題が再発する
+
+---
+
 ## キャッシュ
 
 ### TTL 設計ルール

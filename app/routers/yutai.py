@@ -7,7 +7,7 @@ from app import cache, r2
 
 router = APIRouter(prefix="/yutai", tags=["yutai"])
 
-_PREFIX = "yutai/monthly"
+_PREFIX = "yutai"
 
 
 class YutaiManifestMonthEntry(BaseModel):
