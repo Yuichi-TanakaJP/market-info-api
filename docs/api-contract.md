@@ -62,6 +62,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/earnings-calendar/domestic/*` | 不定期 | 決算データ更新時 |
 | `/earnings-calendar/overseas/*` | 不定期 | 決算データ更新時 |
 | `/edinet/document-list/*` | 平日 1日1回 | 週末・祝日は件数 0 の場合あり |
+| `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/*` | 月次 | 月初に publish |

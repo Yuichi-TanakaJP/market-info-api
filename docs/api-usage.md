@@ -341,6 +341,42 @@ GET /edinet/document-list/{date}    # date: YYYY-MM-DD
 → （same shape as /edinet/document-list/latest）
 ```
 
+### TDNET 全適時開示一覧
+
+```
+GET /tdnet/disclosures/latest
+→ {
+    "target_date": "2026-05-09",
+    "source": "tdnet_timely_disclosure_list",
+    "total_count": 2,
+    "items": [
+      {
+        "disclosure_date": "2026-05-09",
+        "disclosure_time": "15:00",
+        "security_code": "12340",
+        "company_name": "サンプル株式会社",
+        "title": "2026年3月期 決算短信〔日本基準〕（連結）",
+        "disclosure_category": "決算短信",
+        "pdf_url": "https://www.release.tdnet.info/inbs/140120260509555001.pdf",
+        "xbrl_url": "https://www.release.tdnet.info/inbs/xbrl/140120260509555001.zip",
+        "html_url": "",
+        "has_pdf": true,
+        "has_xbrl": true,
+        "has_html": false,
+        "is_financial_related": true,
+        "is_earnings_release": true,
+        "is_correction": false,
+        "fetched_at": "2026-05-09T12:00:00+09:00"
+      }
+    ]
+  }
+
+GET /tdnet/disclosures/{date}    # date: YYYY-MM-DD
+→ （same shape as /tdnet/disclosures/latest）
+```
+
+PDF / HTML / XBRL は再ホストせず、TDNET 原文 URL を返す。
+
 ### JPX休場日
 
 ```
@@ -408,6 +444,7 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calen
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/market-cap/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/dividend-yield/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/tdnet/disclosures/latest
 ```
 
 `/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照する。

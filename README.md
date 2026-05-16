@@ -44,6 +44,8 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /market-rankings/dividend-yield/monthly/{year_month}` | 指定月の配当利回りランキング |
 | `GET /edinet/document-list/latest` | EDINET 書類一覧（最新） |
 | `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
+| `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
+| `GET /tdnet/disclosures/{date}` | 指定日の TDNET 全適時開示一覧 |
 | `GET /econ-calendar/weekly` | 今週の経済指標カレンダー |
 | `GET /econ-calendar/weekly/meta` | 経済指標カレンダー更新メタ情報 |
 

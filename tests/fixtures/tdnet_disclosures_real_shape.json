@@ -1,0 +1,43 @@
+{
+  "target_date": "2026-05-09",
+  "source": "tdnet_timely_disclosure_list",
+  "total_count": 2,
+  "items": [
+    {
+      "disclosure_date": "2026-05-09",
+      "disclosure_time": "15:00",
+      "security_code": "12340",
+      "company_name": "サンプル株式会社",
+      "title": "2026年3月期 決算短信〔日本基準〕（連結）",
+      "disclosure_category": "決算短信",
+      "pdf_url": "https://www.release.tdnet.info/inbs/140120260509555001.pdf",
+      "xbrl_url": "https://www.release.tdnet.info/inbs/xbrl/140120260509555001.zip",
+      "html_url": "",
+      "has_pdf": true,
+      "has_xbrl": true,
+      "has_html": false,
+      "is_financial_related": true,
+      "is_earnings_release": true,
+      "is_correction": false,
+      "fetched_at": "2026-05-09T12:00:00+09:00"
+    },
+    {
+      "disclosure_date": "2026-05-09",
+      "disclosure_time": "15:10",
+      "security_code": "56780",
+      "company_name": "訂正テスト株式会社",
+      "title": "（訂正・数値データ訂正）2026年3月期 決算短信〔IFRS〕（連結）",
+      "disclosure_category": "決算短信",
+      "pdf_url": "https://www.release.tdnet.info/inbs/140120260509555002.pdf",
+      "xbrl_url": "",
+      "html_url": "https://www.release.tdnet.info/inbs/140120260509555002.html",
+      "has_pdf": true,
+      "has_xbrl": false,
+      "has_html": true,
+      "is_financial_related": true,
+      "is_earnings_release": true,
+      "is_correction": true,
+      "fetched_at": "2026-05-09T12:00:00+09:00"
+    }
+  ]
+}
