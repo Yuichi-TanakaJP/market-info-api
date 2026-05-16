@@ -23,6 +23,7 @@ def client(monkeypatch):
     import app.routers.market_calendar as market_calendar_mod
     import app.routers.sbi as sbi_mod
     import app.routers.topix33 as topix33_mod
+    import app.routers.tdnet as tdnet_mod
     import app.routers.yutai as yutai_mod
     import app.routers.market_rankings as market_rankings_mod
     importlib.reload(earnings_calendar_mod)
@@ -31,6 +32,7 @@ def client(monkeypatch):
     importlib.reload(market_calendar_mod)
     importlib.reload(sbi_mod)
     importlib.reload(topix33_mod)
+    importlib.reload(tdnet_mod)
     importlib.reload(yutai_mod)
     importlib.reload(market_rankings_mod)
     from app.main import app
@@ -651,3 +653,49 @@ def test_edinet_document_list_by_date_invalid_format(client):
     resp = client.get("/edinet/document-list/20260423")
     assert resp.status_code == 422
     assert "YYYY-MM-DD" in resp.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# tdnet
+# ---------------------------------------------------------------------------
+
+
+def test_tdnet_disclosures_latest_accepts_market_info_shape(client):
+    payload = _load_fixture("tdnet_disclosures_real_shape.json")
+    with patch("app.routers.tdnet.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/tdnet/disclosures/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["target_date"] == "2026-05-09"
+    assert data["total_count"] == 2
+    assert data["items"][0]["pdf_url"].endswith(".pdf")
+    assert data["items"][1]["is_correction"] is True
+
+
+def test_tdnet_disclosures_by_date(client):
+    payload = _load_fixture("tdnet_disclosures_real_shape.json")
+    with patch("app.routers.tdnet.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/tdnet/disclosures/2026-05-09")
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["security_code"] == "12340"
+
+
+def test_tdnet_disclosures_by_date_not_found(client):
+    err = _make_http_error("https://r2.example.com/tdnet/disclosures/2026-01-01.json", 404)
+    with patch("app.routers.tdnet.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/tdnet/disclosures/2026-01-01")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "tdnet disclosures not found: 2026-01-01"
+
+
+def test_tdnet_disclosures_by_date_invalid_format(client):
+    resp = client.get("/tdnet/disclosures/20260509")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "date must be YYYY-MM-DD format"
+
+
+def test_tdnet_disclosures_latest_502(client):
+    err = _make_http_error("https://r2.example.com/tdnet/disclosures/latest.json", 500)
+    with patch("app.routers.tdnet.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/tdnet/disclosures/latest")
+    assert resp.status_code == 502
