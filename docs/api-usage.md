@@ -85,6 +85,35 @@ GET /ranking/manifest
 
 GET /ranking/{date}         # date: YYYY-MM-DD
 → {"date": "2026-03-27", "records": [...]}
+
+GET /ranking/range?from=2026-03-01&to=2026-03-31
+→ {
+    "family": "ranking",
+    "from": "2026-03-01",
+    "to": "2026-03-31",
+    "bucket": "day",
+    "schema_version": "range-v1",
+    "source_dates": ["2026-03-31", ...],
+    "missing": [],
+    "contains_latest": true,
+    "items": [{"date": "2026-03-31", "records": [...]}]
+  }
+
+※ `/ranking/range`, `/nikkei/range`, `/topix33/range` は full payload を束ねるため、Phase 1 は最大 31 source dates まで。広い検索用途は `/ranking/search?period=90d` のような compact search endpoint を使う。
+
+GET /ranking/search?from=2026-03-01&to=2026-03-31&code=7203
+→ {
+    "family": "ranking",
+    "from": "2026-03-01",
+    "to": "2026-03-31",
+    "schema_version": "search-v1",
+    "manifest_version": "...",
+    "source_dates": ["2026-03-31", ...],
+    "missing": [],
+    "contains_latest": true,
+    "query": {"q": null, "code": "7203", "market": null, "ranking": null},
+    "items": [{"date": "2026-03-31", "code": "7203", "name": "..."}]
+  }
 ```
 
 ### 日経寄与度
@@ -95,6 +124,9 @@ GET /nikkei/manifest
 
 GET /nikkei/{date}          # date: YYYY-MM-DD
 → {"date": "2026-03-27", "index": "nikkei225", "records": [...]}
+
+GET /nikkei/range?from=2026-03-01&to=2026-03-31
+→ {"family": "nikkei", "source_dates": [...], "missing": [], "items": [...]}
 ```
 
 ### TOPIX33
@@ -113,6 +145,9 @@ GET /topix33/{date}         # date: YYYY-MM-DD
     "top_negative": [...],
     "sectors": [...]
   }
+
+GET /topix33/range?from=2026-04-01&to=2026-04-30
+→ {"family": "topix33", "source_dates": [...], "missing": [], "items": [...]}
 ```
 
 ### 株主優待
@@ -428,10 +463,14 @@ GET /market-calendar/us-closed
 curl https://market-info-api-619599800912.asia-northeast1.run.app/health
 curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/2026-03-27
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/ranking/range?from=2026-03-01&to=2026-03-31"
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/ranking/search?from=2026-03-01&to=2026-03-31&code=7203"
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/2026-03-27
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/range?from=2026-03-01&to=2026-03-31"
 curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/2026-04-01
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/topix33/range?from=2026-04-01&to=2026-04-30"
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
