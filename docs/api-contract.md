@@ -53,10 +53,10 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 |------------------------|----------------|------|
 | `/econ-calendar/weekly` | 平日 1日1回（01:00 UTC） | 実績値マージ後に publish。**ポーリング不要** |
 | `/econ-calendar/weekly/meta` | 平日 1日1回（01:00 UTC） | 同上 |
-| `/ranking/*` | 営業日ごと | market_info の日次バッチ完了後 |
-| `/us-ranking/*` | 営業日ごと | 同上 |
-| `/topix33/*` | 営業日ごと | 同上 |
-| `/nikkei/*` | 営業日ごと | 同上 |
+| `/ranking/*` | publish 時（通常は営業日ごと想定） | market_info の日次バッチ完了後。API は manifest の実内容を正とする |
+| `/us-ranking/*` | publish 時（通常は営業日ごと想定） | 同上 |
+| `/topix33/*` | publish 時（通常は営業日ごと想定） | 同上 |
+| `/nikkei/*` | publish 時（通常は営業日ごと想定） | 同上 |
 | `/market-calendar/jpx-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
 | `/market-calendar/us-closed` | 不定期（年次更新） | 休場日カレンダー更新時 |
 | `/earnings-calendar/domestic/*` | 不定期 | 決算データ更新時 |
@@ -87,6 +87,96 @@ manifest に含まれない日付・月をリクエストした場合、404 が�
 ```
 
 ※ topix33 / nikkei は `latest_date` キーを使う（`latest` ではない）。
+
+### ranking / topix33 / nikkei の range response
+
+`/ranking/range`, `/topix33/range`, `/nikkei/range` は manifest の `dates` から `from` / `to` に含まれる source date を選び、既存の日次 payload を `items[]` に束ねて返す。
+Phase 1 は `bucket=day` のみ対応する。
+Full payload を返すため、Phase 1 の range は最大 31 source dates までとし、超過時は 400 を返す。
+Windows Task Scheduler の予定時刻ではなく、R2 の manifest に含まれる dates/latest metadata を正として range を解決する。
+
+```json
+{
+  "family": "ranking",
+  "from": "2026-04-01",
+  "to": "2026-04-30",
+  "bucket": "day",
+  "schema_version": "range-v1",
+  "manifest_version": "2026-05-19T16:10:00Z",
+  "source_dates": ["2026-04-30", "2026-04-28"],
+  "missing": [],
+  "contains_latest": true,
+  "items": []
+}
+```
+
+`missing[]` は将来の部分取得許容用フィールドとして維持する。
+Phase 1 では、manifest に含まれる source date の取得に失敗した場合、不完全な response を cache しないため request 全体を 502 にする。
+休場日など manifest に含まれない日付は `source_dates` に入らず、`missing[]` にも入れない。
+
+range response と、その元になる日次 object cache は `manifest_version` を cache key に含める。
+これにより、過去日付の object が再publishされ manifest `generated_at` が更新された場合に、古い日次 cache と新しい manifest が混在しないようにする。
+
+### ranking search response
+
+広範囲の UI 検索では、full payload を返す `/ranking/range` ではなく、API 側で compact search index を作って該当結果だけ返す `/ranking/search` を使う。
+
+```text
+GET /ranking/search?from=2026-04-01&to=2026-05-19&q=トヨタ
+GET /ranking/search?from=2026-04-01&to=2026-05-19&code=7203
+GET /ranking/search?period=90d&market=東証プライム&ranking=値上がり率
+```
+
+`period` は `Nd` 形式で、Phase 1 は最大 `366d` とする。
+`from` / `to` を直接指定した場合も、選択される source dates は最大 366 件までとし、超過時は 400 を返す。
+
+Response:
+
+```json
+{
+  "family": "ranking",
+  "from": "2026-04-01",
+  "to": "2026-05-19",
+  "schema_version": "search-v1",
+  "manifest_version": "2026-05-19T16:10:00Z",
+  "source_dates": ["2026-05-19", "2026-05-18"],
+  "missing": [],
+  "contains_latest": true,
+  "query": {
+    "q": "トヨタ",
+    "code": null,
+    "market": null,
+    "ranking": null
+  },
+  "items": [
+    {
+      "date": "2026-05-19",
+      "market": "東証プライム",
+      "ranking": "値上がり率",
+      "rank": 12,
+      "name": "トヨタ自動車",
+      "code": "7203",
+      "price": 1234.0,
+      "change": 12.0,
+      "changeRate": 1.23
+    }
+  ]
+}
+```
+
+Search index は query ごとではなく、期間と `manifest_version` ごとにキャッシュする。
+検索条件は cached index に毎回適用するため、同じ期間に対する複数検索で R2 読み込みを再利用できる。
+
+```text
+search-index:ranking:{from}:{to}:search-v1:{manifest_version}
+```
+
+R2 更新時の扱い:
+
+- manifest の `latest` / `generated_at` が変われば `manifest_version` が変わり、新しい range/search cache と日次 object cache を使う。
+- 過去日付の object を再publishする場合も、manifest の `generated_at` を更新すること。
+- manifest metadata が変わらない object 差し替えは API が検知できず、TTL が切れるまで古い cache を返す可能性がある。
+- source date の一部取得に失敗した search index は cache しない。request 全体を 502 にする。
 
 ### yutai の manifest
 
@@ -245,7 +335,9 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 
 > この TTL 設計は market_info の publish スケジュールに依存する。**最短更新間隔が 24時間未満に変わった場合は TTL を合わせて見直すこと**。設計ルールの正本は `market_info/docs/reference/policy_decision_rules.md` を参照。
 
-TTL の実装値は `app/cache.py` の `_MANIFEST_TTL`（21600秒）/ `_DAY_TTL`（86400秒）を参照。  
+TTL の実装値は `app/cache.py` の `_MANIFEST_TTL`（21600秒）/ `_DAY_TTL`（86400秒）を参照。
+range response は latest/current period を含む場合 `_MANIFEST_TTL`、過去 immutable source のみの場合 `_DAY_TTL` を使う。
+search index も同じ TTL 方針を使う。
 テスト時は R2 への実リクエストをモックするか、キャッシュをクリアして確認すること。
 
 ### ポーリングについて

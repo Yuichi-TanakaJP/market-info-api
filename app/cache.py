@@ -11,6 +11,10 @@ _DAY_TTL = 86400        # 24時間（不変データ）
 
 _manifest_cache: TTLCache = TTLCache(maxsize=16, ttl=_MANIFEST_TTL)
 _day_cache: TTLCache = TTLCache(maxsize=128, ttl=_DAY_TTL)
+_range_current_cache: TTLCache = TTLCache(maxsize=64, ttl=_MANIFEST_TTL)
+_range_past_cache: TTLCache = TTLCache(maxsize=64, ttl=_DAY_TTL)
+_search_index_current_cache: TTLCache = TTLCache(maxsize=128, ttl=_MANIFEST_TTL)
+_search_index_past_cache: TTLCache = TTLCache(maxsize=128, ttl=_DAY_TTL)
 
 _locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
@@ -40,3 +44,23 @@ async def get_manifest(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
 
 async def get_day(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
     return await get_or_fetch(_day_cache, key, fetch_fn)
+
+
+async def get_range(
+    key: str,
+    *,
+    contains_latest: bool,
+    fetch_fn: Callable[[], Awaitable[Any]],
+) -> Any:
+    cache = _range_current_cache if contains_latest else _range_past_cache
+    return await get_or_fetch(cache, key, fetch_fn)
+
+
+async def get_search_index(
+    key: str,
+    *,
+    contains_latest: bool,
+    fetch_fn: Callable[[], Awaitable[Any]],
+) -> Any:
+    cache = _search_index_current_cache if contains_latest else _search_index_past_cache
+    return await get_or_fetch(cache, key, fetch_fn)

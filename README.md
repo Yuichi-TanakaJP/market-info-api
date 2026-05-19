@@ -19,10 +19,14 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /health` | ヘルスチェック |
 | `GET /ranking/manifest` | 株価ランキング manifest |
 | `GET /ranking/{date}` | 指定日のランキング JSON |
+| `GET /ranking/range?from={date}&to={date}` | 期間内のランキング JSON |
+| `GET /ranking/search?from={date}&to={date}` | 期間内のランキング検索 |
 | `GET /topix33/manifest` | TOPIX33 manifest |
 | `GET /topix33/{date}` | 指定日の TOPIX33 JSON |
+| `GET /topix33/range?from={date}&to={date}` | 期間内の TOPIX33 JSON |
 | `GET /nikkei/manifest` | 日経寄与度 manifest |
 | `GET /nikkei/{date}` | 指定日の日経寄与度 JSON |
+| `GET /nikkei/range?from={date}&to={date}` | 期間内の日経寄与度 JSON |
 | `GET /market-calendar/jpx-closed` | JPX 休場日カレンダー |
 | `GET /market-calendar/us-closed` | US 休場日カレンダー |
 | `GET /earnings-calendar/domestic/latest` | 国内決算カレンダー（全件） |
@@ -84,6 +88,7 @@ MARKET_INFO_API_KEY=
 curl http://localhost:8000/health
 curl http://localhost:8000/ranking/manifest
 curl http://localhost:8000/ranking/2026-04-04
+curl "http://localhost:8000/ranking/range?from=2026-04-01&to=2026-04-30"
 curl http://localhost:8000/market-calendar/jpx-closed
 curl http://localhost:8000/market-calendar/us-closed
 ```

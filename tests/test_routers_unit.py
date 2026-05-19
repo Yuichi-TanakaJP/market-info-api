@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import httpx
+from datetime import date, timedelta
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 import json
@@ -82,6 +83,167 @@ def test_ranking_day(client):
     assert resp.json()["date"] == "2026-03-28"
 
 
+def test_ranking_range_uses_manifest_dates_and_marks_latest(client):
+    manifest = {"dates": ["2026-05-19", "2026-05-18", "2026-05-16"], "latest": "2026-05-19"}
+
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+        assert manifest_version_key == "2026-05-19"
+        return {"date": source_date, "records": []}
+
+    with (
+        patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.ranking._get_day_payload", new=AsyncMock(side_effect=fetch_day)),
+    ):
+        resp = client.get("/ranking/range?from=2026-05-18&to=2026-05-19")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["family"] == "ranking"
+    assert data["from"] == "2026-05-18"
+    assert data["to"] == "2026-05-19"
+    assert data["manifest_version"] == "2026-05-19"
+    assert data["source_dates"] == ["2026-05-19", "2026-05-18"]
+    assert data["missing"] == []
+    assert data["contains_latest"] is True
+    assert data["items"] == [
+        {"date": "2026-05-19", "records": []},
+        {"date": "2026-05-18", "records": []},
+    ]
+
+
+def test_ranking_range_rejects_reversed_dates(client):
+    resp = client.get("/ranking/range?from=2026-05-20&to=2026-05-19")
+    assert resp.status_code == 400
+
+
+def test_ranking_range_fetch_failure_returns_502(client):
+    manifest = {"dates": ["2026-05-19"], "latest": "2026-05-19"}
+
+    with (
+        patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.ranking._get_day_payload", new=AsyncMock(side_effect=RuntimeError("r2 down"))),
+    ):
+        resp = client.get("/ranking/range?from=2026-05-19&to=2026-05-19")
+
+    assert resp.status_code == 502
+
+
+def test_ranking_range_rejects_too_many_source_dates(client):
+    dates = [(date(2026, 5, 1) + timedelta(days=offset)).isoformat() for offset in range(32)]
+    manifest = {"dates": dates, "latest": dates[-1]}
+
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get(f"/ranking/range?from={dates[0]}&to={dates[-1]}")
+
+    assert resp.status_code == 400
+    assert "source_dates" in resp.json()["detail"]
+
+
+def test_ranking_search_filters_compact_index(client):
+    manifest = {
+        "dates": ["2026-05-19", "2026-05-18"],
+        "latest": "2026-05-19",
+        "generated_at": "2026-05-19T00:00:00Z",
+    }
+
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+        assert manifest_version_key == "2026-05-19T00:00:00Z"
+        return {
+            "date": source_date,
+            "records": [
+                {
+                    "market": "東証プライム",
+                    "ranking": "値上がり率",
+                    "rank": 1,
+                    "name": "トヨタ自動車",
+                    "code": "7203",
+                    "price": 1000.0,
+                    "change": 10.0,
+                    "changeRate": 1.0,
+                },
+                {
+                    "market": "東証プライム",
+                    "ranking": "売買高",
+                    "rank": 2,
+                    "name": "別銘柄",
+                    "code": "9999",
+                    "price": 500.0,
+                    "change": -5.0,
+                    "changeRate": -1.0,
+                },
+            ],
+        }
+
+    with (
+        patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.ranking._get_day_payload", new=AsyncMock(side_effect=fetch_day)),
+    ):
+        resp = client.get("/ranking/search?from=2026-05-18&to=2026-05-19&code=7203")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["schema_version"] == "search-v1"
+    assert data["manifest_version"] == "2026-05-19T00:00:00Z"
+    assert data["contains_latest"] is True
+    assert len(data["items"]) == 2
+    assert {item["date"] for item in data["items"]} == {"2026-05-18", "2026-05-19"}
+    assert all(item["code"] == "7203" for item in data["items"])
+
+
+def test_ranking_search_requires_period_or_from_to(client):
+    manifest = {"dates": ["2026-05-19"], "latest": "2026-05-19"}
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/ranking/search?q=7203")
+    assert resp.status_code == 400
+
+
+def test_ranking_search_period_uses_manifest_latest(client):
+    manifest = {"dates": ["2026-05-19", "2026-05-18"], "latest": "2026-05-19"}
+
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+        return {"date": source_date, "records": []}
+
+    with (
+        patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.ranking._get_day_payload", new=AsyncMock(side_effect=fetch_day)),
+    ):
+        resp = client.get("/ranking/search?period=2d")
+
+    assert resp.status_code == 200
+    assert resp.json()["from"] == "2026-05-18"
+    assert resp.json()["to"] == "2026-05-19"
+
+
+def test_ranking_search_rejects_oversized_period(client):
+    manifest = {"dates": ["2026-05-19"], "latest": "2026-05-19"}
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/ranking/search?period=1000000d")
+    assert resp.status_code == 400
+
+
+def test_ranking_search_rejects_too_many_source_dates(client):
+    dates = [(date(2025, 1, 1) + timedelta(days=offset)).isoformat() for offset in range(367)]
+    manifest = {"dates": dates, "latest": dates[-1]}
+
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get(f"/ranking/search?from={dates[0]}&to={dates[-1]}")
+
+    assert resp.status_code == 400
+    assert "source_dates" in resp.json()["detail"]
+
+
+def test_ranking_search_fetch_failure_returns_502(client):
+    manifest = {"dates": ["2026-05-19"], "latest": "2026-05-19"}
+
+    with (
+        patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.ranking._get_day_payload", new=AsyncMock(side_effect=RuntimeError("r2 down"))),
+    ):
+        resp = client.get("/ranking/search?from=2026-05-19&to=2026-05-19")
+
+    assert resp.status_code == 502
+
+
 def test_nikkei_manifest(client):
     manifest = {"dates": ["2026-03-28"], "latest_date": "2026-03-28", "generated_at": ""}
     with patch("app.routers.nikkei.cache.get_manifest", new=AsyncMock(return_value=manifest)):
@@ -105,6 +267,32 @@ def test_nikkei_day(client):
         resp = client.get("/nikkei/2026-03-28")
     assert resp.status_code == 200
     assert resp.json()["date"] == "2026-03-28"
+
+
+def test_nikkei_range_uses_latest_date(client):
+    manifest = {"dates": ["2026-05-19", "2026-05-16"], "latest_date": "2026-05-19"}
+
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+        return {
+            "date": source_date,
+            "index": "nikkei225",
+            "summary": {"total_contribution": 0.0, "advancers": 0, "decliners": 0, "unchanged": 0},
+            "top_positive": [],
+            "top_negative": [],
+            "records": [],
+        }
+
+    with (
+        patch("app.routers.nikkei.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.nikkei._get_day_payload", new=AsyncMock(side_effect=fetch_day)),
+    ):
+        resp = client.get("/nikkei/range?from=2026-05-16&to=2026-05-18")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["contains_latest"] is False
+    assert data["source_dates"] == ["2026-05-16"]
+    assert data["items"][0]["date"] == "2026-05-16"
 
 
 def test_market_calendar_jpx_closed(client):
@@ -316,6 +504,32 @@ def test_topix33_day(client):
         resp = client.get("/topix33/2026-04-01")
     assert resp.status_code == 200
     assert resp.json()["index"] == "topix33"
+
+
+def test_topix33_range(client):
+    manifest = {"dates": ["2026-04-02", "2026-04-01"], "latest_date": "2026-04-02"}
+
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+        return {
+            "date": source_date,
+            "index": "topix33",
+            "summary": {"advancers": 20, "decliners": 12, "unchanged": 1},
+            "top_positive": [],
+            "top_negative": [],
+            "sectors": [],
+        }
+
+    with (
+        patch("app.routers.topix33.get_manifest", new=AsyncMock(return_value=manifest)),
+        patch("app.routers.topix33._get_day_payload", new=AsyncMock(side_effect=fetch_day)),
+    ):
+        resp = client.get("/topix33/range?from=2026-04-01&to=2026-04-02")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["family"] == "topix33"
+    assert data["contains_latest"] is True
+    assert len(data["items"]) == 2
 
 
 def test_yutai_manifest(client):
