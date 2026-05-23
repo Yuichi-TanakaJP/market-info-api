@@ -17,6 +17,22 @@ market_info  →（R2 publish）→  market-info-api  →（HTTP）→  mini-too
 
 ---
 
+## 横断参照入口
+
+API contract を変更する前に、次の docs を確認する。
+
+| 参照先 | 確認すること |
+|---|---|
+| [`docs/resource-usage.md`](resource-usage.md) | cache / range / search / compact publish が Cloud Run memory、R2 reads、無料枠に与える影響 |
+| [`market_info/docs/architecture.md`](https://github.com/Yuichi-TanakaJP/market_info/blob/main/docs/architecture.md) | 3 repo 全体のデータフローと関連 docs |
+| [`market_info/docs/reference/policy_decision_rules.md`](https://github.com/Yuichi-TanakaJP/market_info/blob/main/docs/reference/policy_decision_rules.md) | heavy / broad-range / reusable derived data をどの層に置くかの標準ルール |
+| [`market_info/docs/reference/publish_contract_inventory.md`](https://github.com/Yuichi-TanakaJP/market_info/blob/main/docs/reference/publish_contract_inventory.md) | R2 published family、object path、schema source、compact artifact 候補 |
+| [`mini-tools/docs/specs/cross-cutting/market-tools-data-fetch-paths.md`](https://github.com/Yuichi-TanakaJP/mini-tools/blob/main/docs/specs/cross-cutting/market-tools-data-fetch-paths.md) | UI 側が必要とする endpoint、fallback、internal route の現在仕様 |
+
+`market-info-api` は API contract、R2 fetch、軽い request-time composition、TTL cache、query filter、HTTP error contract を担当する。広範囲で再利用される派生データは、API process-local cache だけで抱えず、`market_info` で compact artifact として R2 publish する案を先に評価する。
+
+---
+
 ## 共通ルール
 
 ### エラーコード
@@ -338,6 +354,7 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 TTL の実装値は `app/cache.py` の `_MANIFEST_TTL`（21600秒）/ `_DAY_TTL`（86400秒）を参照。
 range response は latest/current period を含む場合 `_MANIFEST_TTL`、過去 immutable source のみの場合 `_DAY_TTL` を使う。
 search index も同じ TTL 方針を使う。
+API-side cache、range/search endpoint、または新しい R2 publish artifact を追加する前に、[`resource-usage.md`](resource-usage.md) の free-tier / measured-size / checklist を確認すること。
 テスト時は R2 への実リクエストをモックするか、キャッシュをクリアして確認すること。
 
 ### ポーリングについて
