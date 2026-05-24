@@ -14,6 +14,7 @@ market-info-api のドキュメント置き場。
 | [api-contract.md](api-contract.md) | エラーコード・fallback 設計・TTL ルール・更新単位・manifest 形式・インシデント記録 |
 | [api-usage.md](api-usage.md) | エンドポイント別レスポンス例・curl コマンド集 |
 | [gcp-cloud-run-setup.md](gcp-cloud-run-setup.md) | GCP Cloud Run へのデプロイ手順（初期セットアップ・CI 連携） |
+| [resource-usage.md](resource-usage.md) | Cloud Run / R2 の無料枠、現行データ・キャッシュ容量見積もり、range/search/publish 追加時の判断チェックリスト |
 | [history/mini-tools-migration-20260501.md](history/mini-tools-migration-20260501.md) | mini-tools → API 移行手順（移行完了済み・retired 2026-05-01） |
 
 ---
