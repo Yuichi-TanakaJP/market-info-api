@@ -84,6 +84,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/yutai/*` | 月次 | 月初に publish |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
+| `/investor-flow/*` | 週次 | JPX 公式 Excel 掲載後に publish |
 
 ---
 
@@ -244,6 +245,30 @@ R2 更新時の扱い:
 ```
 
 国内・海外とも同じ manifest shape を返す。
+
+### investor-flow の manifest
+
+```json
+{
+  "data_source": "JPX",
+  "latest": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD",
+    "path": "investor_flow_YYYY-MM-DD_to_YYYY-MM-DD.json"
+  },
+  "weeks": [
+    {
+      "start_date": "YYYY-MM-DD",
+      "end_date": "YYYY-MM-DD",
+      "path": "investor_flow_YYYY-MM-DD_to_YYYY-MM-DD.json"
+    }
+  ],
+  "generated_at_jst": "YYYY-MM-DDTHH:MM:SS+09:00"
+}
+```
+
+`/investor-flow/weeks/{start_date}/{end_date}` は `investor-flow/investor_flow_{start_date}_to_{end_date}.json` を読む。
+`start_date` / `end_date` は YYYY-MM-DD 形式で、API 側で 422 を返す。
 
 ---
 

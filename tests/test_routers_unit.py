@@ -27,6 +27,7 @@ def client(monkeypatch):
     import app.routers.tdnet as tdnet_mod
     import app.routers.yutai as yutai_mod
     import app.routers.market_rankings as market_rankings_mod
+    import app.routers.investor_flow as investor_flow_mod
     importlib.reload(earnings_calendar_mod)
     importlib.reload(ranking_mod)
     importlib.reload(nikkei_mod)
@@ -36,6 +37,7 @@ def client(monkeypatch):
     importlib.reload(tdnet_mod)
     importlib.reload(yutai_mod)
     importlib.reload(market_rankings_mod)
+    importlib.reload(investor_flow_mod)
     from app.main import app
     return TestClient(app)
 
@@ -913,3 +915,60 @@ def test_tdnet_disclosures_latest_502(client):
     with patch("app.routers.tdnet.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/tdnet/disclosures/latest")
     assert resp.status_code == 502
+
+
+# ---------------------------------------------------------------------------
+# investor-flow
+# ---------------------------------------------------------------------------
+
+
+def test_investor_flow_latest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["data_source"] == "JPX"
+    assert data["start_date"] == "2026-05-18"
+    assert data["records"][1]["share_sell_pct"] is None
+    assert data["records"][0]["diff_yen"] == 1000000000
+
+
+def test_investor_flow_manifest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_manifest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/manifest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["latest"]["path"] == "investor_flow_2026-05-18_to_2026-05-22.json"
+    assert len(data["weeks"]) == 2
+
+
+def test_investor_flow_week(client):
+    payload = _load_fixture("investor_flow_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/weeks/2026-05-18/2026-05-22")
+    assert resp.status_code == 200
+    assert resp.json()["end_date"] == "2026-05-22"
+
+
+def test_investor_flow_week_invalid_format(client):
+    resp = client.get("/investor-flow/weeks/20260518/2026-05-22")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "start_date and end_date must be YYYY-MM-DD format"
+
+
+def test_investor_flow_week_not_found(client):
+    err = _make_http_error("https://r2.example.com/investor-flow/investor_flow_2026-01-05_to_2026-01-09.json", 404)
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/weeks/2026-01-05/2026-01-09")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow week not found: 2026-01-05 to 2026-01-09"
+
+
+def test_investor_flow_latest_not_found(client):
+    err = _make_http_error("https://r2.example.com/investor-flow/latest.json", 404)
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/latest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow latest not found"

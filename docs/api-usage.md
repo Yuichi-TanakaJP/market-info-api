@@ -349,6 +349,48 @@ GET /market-rankings/dividend-yield/monthly/{year_month}    # year_month: YYYY-M
 → （same shape as market-cap monthly）
 ```
 
+### 投資主体別売買動向
+
+```
+GET /investor-flow/latest
+→ {
+    "data_source": "JPX",
+    "source_url": "https://www.jpx.co.jp/markets/statistics-equities/investor-type/...",
+    "source_file": "stock_val_1_260522.xls",
+    "week_label_raw": "2026年5月第3週（5/18 - 5/22）",
+    "start_date": "2026-05-18",
+    "end_date": "2026-05-22",
+    "market_scope": "二市場",
+    "unit": "thousand_yen",
+    "generated_at_jst": "2026-05-28T16:00:00+09:00",
+    "records": [
+      {
+        "row_index": 1,
+        "category": "海外投資家",
+        "sell_thousand_yen": 50000000,
+        "share_sell_pct": null,
+        "buy_thousand_yen": 48000000,
+        "share_buy_pct": null,
+        "diff_thousand_yen": -2000000,
+        "sell_yen": 50000000000,
+        "buy_yen": 48000000000,
+        "diff_yen": -2000000000
+      }
+    ]
+  }
+
+GET /investor-flow/manifest
+→ {
+    "data_source": "JPX",
+    "latest": {"start_date": "2026-05-18", "end_date": "2026-05-22", "path": "investor_flow_2026-05-18_to_2026-05-22.json"},
+    "weeks": [{"start_date": "2026-05-18", "end_date": "2026-05-22", "path": "investor_flow_2026-05-18_to_2026-05-22.json"}],
+    "generated_at_jst": "2026-05-28T16:00:00+09:00"
+  }
+
+GET /investor-flow/weeks/{start_date}/{end_date}    # start_date/end_date: YYYY-MM-DD
+→ （same shape as /investor-flow/latest）
+```
+
 ### EDINET書類一覧
 
 ```
@@ -482,6 +524,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calen
 curl https://market-info-api-619599800912.asia-northeast1.run.app/earnings-calendar/overseas/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/market-cap/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/dividend-yield/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/tdnet/disclosures/latest
 ```

@@ -1,0 +1,37 @@
+{
+  "data_source": "JPX",
+  "source_url": "https://www.jpx.co.jp/markets/statistics-equities/investor-type/nlsgeu0000062rma-att/stock_val_1_260522.xls",
+  "source_file": "stock_val_1_260522.xls",
+  "week_label_raw": "2026年5月第3週（5/18 - 5/22）",
+  "start_date": "2026-05-18",
+  "end_date": "2026-05-22",
+  "market_scope": "二市場",
+  "unit": "thousand_yen",
+  "generated_at_jst": "2026-05-28T16:00:00+09:00",
+  "records": [
+    {
+      "row_index": 1,
+      "category": "総計",
+      "sell_thousand_yen": 123456789,
+      "share_sell_pct": 100.0,
+      "buy_thousand_yen": 124456789,
+      "share_buy_pct": 100.0,
+      "diff_thousand_yen": 1000000,
+      "sell_yen": 123456789000,
+      "buy_yen": 124456789000,
+      "diff_yen": 1000000000
+    },
+    {
+      "row_index": 2,
+      "category": "海外投資家",
+      "sell_thousand_yen": 50000000,
+      "share_sell_pct": null,
+      "buy_thousand_yen": 48000000,
+      "share_buy_pct": null,
+      "diff_thousand_yen": -2000000,
+      "sell_yen": 50000000000,
+      "buy_yen": 48000000000,
+      "diff_yen": -2000000000
+    }
+  ]
+}
