@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.routers import earnings_calendar, econ_calendar, edinet, health, investor_flow, market_calendar, market_rankings, nikkei, nikko, ranking, sbi, tdnet, topix33, us_ranking, yutai
+from app.routers import earnings_calendar, econ_calendar, edinet, health, investor_flow, market_calendar, market_rankings, nikkei, nikko, ranking, ranking_enriched, sbi, tdnet, topix33, us_ranking, yutai
 
 app = FastAPI(
     title="market-info-api",
@@ -26,6 +26,8 @@ app = FastAPI(
         "| `/earnings-calendar/*/monthly/{year_month}` | 不定期 | 不変（24時間） |\n"
         "| `/ranking/manifest` | 営業日ごと（日次バッチ後） | 可変（6時間） |\n"
         "| `/ranking/{date}` | 営業日ごと | 不変（24時間） |\n"
+        "| `/ranking-enriched/manifest` | 営業日ごと（publish された場合） | 可変（6時間） |\n"
+        "| `/ranking-enriched/{date}` | 営業日ごと（publish された場合） | 不変（24時間） |\n"
         "| `/nikkei/manifest` | 営業日ごと | 可変（6時間） |\n"
         "| `/nikkei/{date}` | 営業日ごと | 不変（24時間） |\n"
         "| `/topix33/manifest` | 営業日ごと | 可変（6時間） |\n"
@@ -56,6 +58,7 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(earnings_calendar.router)
 app.include_router(ranking.router)
+app.include_router(ranking_enriched.router)
 app.include_router(nikkei.router)
 app.include_router(sbi.router)
 app.include_router(nikko.router)

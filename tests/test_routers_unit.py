@@ -20,6 +20,7 @@ def client(monkeypatch):
     importlib.reload(r2_mod)
     import app.routers.earnings_calendar as earnings_calendar_mod
     import app.routers.ranking as ranking_mod
+    import app.routers.ranking_enriched as ranking_enriched_mod
     import app.routers.nikkei as nikkei_mod
     import app.routers.market_calendar as market_calendar_mod
     import app.routers.sbi as sbi_mod
@@ -30,6 +31,7 @@ def client(monkeypatch):
     import app.routers.investor_flow as investor_flow_mod
     importlib.reload(earnings_calendar_mod)
     importlib.reload(ranking_mod)
+    importlib.reload(ranking_enriched_mod)
     importlib.reload(nikkei_mod)
     importlib.reload(market_calendar_mod)
     importlib.reload(sbi_mod)
@@ -575,6 +577,59 @@ def test_ranking_manifest_502(client):
     with patch("app.routers.ranking.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/ranking/manifest")
     assert resp.status_code == 502
+
+
+def test_ranking_enriched_manifest(client):
+    manifest = {"dates": ["2026-04-10"], "latest": "2026-04-10"}
+    with patch("app.routers.ranking_enriched.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/ranking-enriched/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["latest"] == "2026-04-10"
+
+
+def test_ranking_enriched_day(client):
+    payload = {
+        "date": "2026-04-10",
+        "records": [
+            {
+                "market": "プライム",
+                "ranking": "値上がり率",
+                "rank": 1,
+                "name": "テスト",
+                "code": "1234",
+                "marketLabel": "東証プライム",
+                "industry": "情報・通信業",
+                "price": 1000.0,
+                "time": "15:30",
+                "change": 10.0,
+                "changeRate": 1.0,
+                "volume": 100000.0,
+                "value": 100000000.0,
+                "volumeSpikePct": None,
+                "per": 12.3,
+                "pbr": None,
+                "tickCount": 123.0,
+                "upCount": 80.0,
+                "downCount": 40.0,
+                "marketCapOkuYen": 4567.8,
+                "dividendYieldPct": 2.1,
+            }
+        ],
+    }
+    with patch("app.routers.ranking_enriched.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/ranking-enriched/2026-04-10")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["records"][0]["volumeSpikePct"] is None
+    assert data["records"][0]["marketCapOkuYen"] == 4567.8
+
+
+def test_ranking_enriched_day_not_found(client):
+    err = _make_http_error("https://r2.example.com/stock-ranking-enriched/20260410.json", 404)
+    with patch("app.routers.ranking_enriched.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/ranking-enriched/2026-04-10")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "ranking-enriched not found: 2026-04-10"
 
 
 def test_topix33_day_not_found(client):

@@ -116,6 +116,43 @@ GET /ranking/search?from=2026-03-01&to=2026-03-31&code=7203
   }
 ```
 
+### 株式ランキング enriched
+
+```
+GET /ranking-enriched/manifest
+→ {"dates": ["2026-04-10", ...], "latest": "2026-04-10"}
+
+GET /ranking-enriched/{date}         # date: YYYY-MM-DD
+→ {
+    "date": "2026-04-10",
+    "records": [
+      {
+        "market": "プライム",
+        "ranking": "値上がり率",
+        "rank": 1,
+        "name": "テスト",
+        "code": "1234",
+        "marketLabel": "東証プライム",
+        "industry": "情報・通信業",
+        "price": 1000.0,
+        "time": "15:30",
+        "change": 10.0,
+        "changeRate": 1.0,
+        "volume": 100000.0,
+        "value": 100000000.0,
+        "volumeSpikePct": null,
+        "per": 12.3,
+        "pbr": null,
+        "tickCount": 123.0,
+        "upCount": 80.0,
+        "downCount": 40.0,
+        "marketCapOkuYen": 4567.8,
+        "dividendYieldPct": 2.1
+      }
+    ]
+  }
+```
+
 ### 日経寄与度
 
 ```
@@ -507,6 +544,7 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/manife
 curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/2026-03-27
 curl "https://market-info-api-619599800912.asia-northeast1.run.app/ranking/range?from=2026-03-01&to=2026-03-31"
 curl "https://market-info-api-619599800912.asia-northeast1.run.app/ranking/search?from=2026-03-01&to=2026-03-31&code=7203"
+curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking-enriched/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/2026-03-27
 curl "https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/range?from=2026-03-01&to=2026-03-31"
