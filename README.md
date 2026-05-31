@@ -21,6 +21,8 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /ranking/{date}` | 指定日のランキング JSON |
 | `GET /ranking/range?from={date}&to={date}` | 期間内のランキング JSON |
 | `GET /ranking/search?from={date}&to={date}` | 期間内のランキング検索 |
+| `GET /ranking-enriched/manifest` | enriched 株価ランキング manifest |
+| `GET /ranking-enriched/{date}` | 指定日の enriched ランキング JSON |
 | `GET /topix33/manifest` | TOPIX33 manifest |
 | `GET /topix33/{date}` | 指定日の TOPIX33 JSON |
 | `GET /topix33/range?from={date}&to={date}` | 期間内の TOPIX33 JSON |
@@ -46,6 +48,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /market-rankings/market-cap/monthly/{year_month}` | 指定月の時価総額ランキング |
 | `GET /market-rankings/dividend-yield/manifest` | 配当利回りランキング manifest |
 | `GET /market-rankings/dividend-yield/monthly/{year_month}` | 指定月の配当利回りランキング |
+| `GET /investor-flow/latest` | 投資主体別売買動向（最新） |
+| `GET /investor-flow/manifest` | 投資主体別売買動向 manifest |
+| `GET /investor-flow/weeks/{start_date}/{end_date}` | 指定週の投資主体別売買動向 |
 | `GET /edinet/document-list/latest` | EDINET 書類一覧（最新） |
 | `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
 | `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
@@ -89,8 +94,10 @@ curl http://localhost:8000/health
 curl http://localhost:8000/ranking/manifest
 curl http://localhost:8000/ranking/2026-04-04
 curl "http://localhost:8000/ranking/range?from=2026-04-01&to=2026-04-30"
+curl http://localhost:8000/ranking-enriched/manifest
 curl http://localhost:8000/market-calendar/jpx-closed
 curl http://localhost:8000/market-calendar/us-closed
+curl http://localhost:8000/investor-flow/latest
 ```
 
 ---

@@ -20,6 +20,7 @@ def client(monkeypatch):
     importlib.reload(r2_mod)
     import app.routers.earnings_calendar as earnings_calendar_mod
     import app.routers.ranking as ranking_mod
+    import app.routers.ranking_enriched as ranking_enriched_mod
     import app.routers.nikkei as nikkei_mod
     import app.routers.market_calendar as market_calendar_mod
     import app.routers.sbi as sbi_mod
@@ -27,8 +28,10 @@ def client(monkeypatch):
     import app.routers.tdnet as tdnet_mod
     import app.routers.yutai as yutai_mod
     import app.routers.market_rankings as market_rankings_mod
+    import app.routers.investor_flow as investor_flow_mod
     importlib.reload(earnings_calendar_mod)
     importlib.reload(ranking_mod)
+    importlib.reload(ranking_enriched_mod)
     importlib.reload(nikkei_mod)
     importlib.reload(market_calendar_mod)
     importlib.reload(sbi_mod)
@@ -36,6 +39,7 @@ def client(monkeypatch):
     importlib.reload(tdnet_mod)
     importlib.reload(yutai_mod)
     importlib.reload(market_rankings_mod)
+    importlib.reload(investor_flow_mod)
     from app.main import app
     return TestClient(app)
 
@@ -575,6 +579,59 @@ def test_ranking_manifest_502(client):
     assert resp.status_code == 502
 
 
+def test_ranking_enriched_manifest(client):
+    manifest = {"dates": ["2026-04-10"], "latest": "2026-04-10"}
+    with patch("app.routers.ranking_enriched.cache.get_manifest", new=AsyncMock(return_value=manifest)):
+        resp = client.get("/ranking-enriched/manifest")
+    assert resp.status_code == 200
+    assert resp.json()["latest"] == "2026-04-10"
+
+
+def test_ranking_enriched_day(client):
+    payload = {
+        "date": "2026-04-10",
+        "records": [
+            {
+                "market": "プライム",
+                "ranking": "値上がり率",
+                "rank": 1,
+                "name": "テスト",
+                "code": "1234",
+                "marketLabel": "東証プライム",
+                "industry": "情報・通信業",
+                "price": 1000.0,
+                "time": "15:30",
+                "change": 10.0,
+                "changeRate": 1.0,
+                "volume": 100000.0,
+                "value": 100000000.0,
+                "volumeSpikePct": None,
+                "per": 12.3,
+                "pbr": None,
+                "tickCount": 123.0,
+                "upCount": 80.0,
+                "downCount": 40.0,
+                "marketCapOkuYen": 4567.8,
+                "dividendYieldPct": 2.1,
+            }
+        ],
+    }
+    with patch("app.routers.ranking_enriched.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/ranking-enriched/2026-04-10")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["records"][0]["volumeSpikePct"] is None
+    assert data["records"][0]["marketCapOkuYen"] == 4567.8
+
+
+def test_ranking_enriched_day_not_found(client):
+    err = _make_http_error("https://r2.example.com/stock-ranking-enriched/20260410.json", 404)
+    with patch("app.routers.ranking_enriched.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/ranking-enriched/2026-04-10")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "ranking-enriched not found: 2026-04-10"
+
+
 def test_topix33_day_not_found(client):
     err = _make_http_error("https://r2.example.com/topix33/topix33_2026-02-28.json", 404)
     with patch("app.routers.topix33.cache.get_day", new=AsyncMock(side_effect=err)):
@@ -913,3 +970,60 @@ def test_tdnet_disclosures_latest_502(client):
     with patch("app.routers.tdnet.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/tdnet/disclosures/latest")
     assert resp.status_code == 502
+
+
+# ---------------------------------------------------------------------------
+# investor-flow
+# ---------------------------------------------------------------------------
+
+
+def test_investor_flow_latest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["data_source"] == "JPX"
+    assert data["start_date"] == "2026-05-18"
+    assert data["records"][1]["share_sell_pct"] is None
+    assert data["records"][0]["diff_yen"] == 1000000000
+
+
+def test_investor_flow_manifest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_manifest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/manifest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["latest"]["path"] == "investor_flow_2026-05-18_to_2026-05-22.json"
+    assert len(data["weeks"]) == 2
+
+
+def test_investor_flow_week(client):
+    payload = _load_fixture("investor_flow_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/weeks/2026-05-18/2026-05-22")
+    assert resp.status_code == 200
+    assert resp.json()["end_date"] == "2026-05-22"
+
+
+def test_investor_flow_week_invalid_format(client):
+    resp = client.get("/investor-flow/weeks/20260518/2026-05-22")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "start_date and end_date must be YYYY-MM-DD format"
+
+
+def test_investor_flow_week_not_found(client):
+    err = _make_http_error("https://r2.example.com/investor-flow/investor_flow_2026-01-05_to_2026-01-09.json", 404)
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/weeks/2026-01-05/2026-01-09")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow week not found: 2026-01-05 to 2026-01-09"
+
+
+def test_investor_flow_latest_not_found(client):
+    err = _make_http_error("https://r2.example.com/investor-flow/latest.json", 404)
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/latest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow latest not found"

@@ -70,6 +70,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/econ-calendar/weekly` | 平日 1日1回（01:00 UTC） | 実績値マージ後に publish。**ポーリング不要** |
 | `/econ-calendar/weekly/meta` | 平日 1日1回（01:00 UTC） | 同上 |
 | `/ranking/*` | publish 時（通常は営業日ごと想定） | market_info の日次バッチ完了後。API は manifest の実内容を正とする |
+| `/ranking-enriched/*` | publish 時（通常は営業日ごと想定） | stock-ranking-enriched が publish された場合 |
 | `/us-ranking/*` | publish 時（通常は営業日ごと想定） | 同上 |
 | `/topix33/*` | publish 時（通常は営業日ごと想定） | 同上 |
 | `/nikkei/*` | publish 時（通常は営業日ごと想定） | 同上 |
@@ -84,6 +85,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/yutai/*` | 月次 | 月初に publish |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
+| `/investor-flow/*` | 週次 | JPX 公式 Excel 掲載後に publish |
 
 ---
 
@@ -103,6 +105,9 @@ manifest に含まれない日付・月をリクエストした場合、404 が�
 ```
 
 ※ topix33 / nikkei は `latest_date` キーを使う（`latest` ではない）。
+
+`/ranking-enriched/manifest` は `ranking` と同じ `latest` / `dates` shape を返す。
+日次 payload は `/ranking/{date}` と同じ base record fields に、`volumeSpikePct`, `per`, `pbr`, `tickCount`, `upCount`, `downCount`, `marketCapOkuYen`, `dividendYieldPct` を追加する。
 
 ### ranking / topix33 / nikkei の range response
 
@@ -244,6 +249,30 @@ R2 更新時の扱い:
 ```
 
 国内・海外とも同じ manifest shape を返す。
+
+### investor-flow の manifest
+
+```json
+{
+  "data_source": "JPX",
+  "latest": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD",
+    "path": "investor_flow_YYYY-MM-DD_to_YYYY-MM-DD.json"
+  },
+  "weeks": [
+    {
+      "start_date": "YYYY-MM-DD",
+      "end_date": "YYYY-MM-DD",
+      "path": "investor_flow_YYYY-MM-DD_to_YYYY-MM-DD.json"
+    }
+  ],
+  "generated_at_jst": "YYYY-MM-DDTHH:MM:SS+09:00"
+}
+```
+
+`/investor-flow/weeks/{start_date}/{end_date}` は `investor-flow/investor_flow_{start_date}_to_{end_date}.json` を読む。
+`start_date` / `end_date` は YYYY-MM-DD 形式で、API 側で 422 を返す。
 
 ---
 
