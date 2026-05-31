@@ -1,0 +1,110 @@
+{
+  "schema_version": "investor-flow-analysis-v1",
+  "data_source": "JPX",
+  "analysis_scope": "weekly_investor_flow",
+  "start_date": "2026-05-18",
+  "end_date": "2026-05-22",
+  "previous_start_date": "2026-05-11",
+  "previous_end_date": "2026-05-15",
+  "generated_at_jst": "2026-05-31T12:00:00+09:00",
+  "source_snapshot_path": "investor_flow_2026-05-18_to_2026-05-22.json",
+  "lookback_weeks": 13,
+  "summary": {
+    "largest_net_buy": {
+      "category": "海外投資家",
+      "diff_yen": 450000000000
+    },
+    "largest_net_sell": {
+      "category": "自己計",
+      "diff_yen": -290000000000
+    }
+  },
+  "buy_composition": [
+    {
+      "group": "total",
+      "denominator_category": "総計",
+      "category": "自己計",
+      "parent_category": "総計",
+      "amount_yen": 45000000000,
+      "share_pct": 8.1001,
+      "level": 1,
+      "is_top_level": true
+    },
+    {
+      "group": "commission",
+      "denominator_category": "委託計",
+      "category": "海外投資家",
+      "parent_category": "委託計",
+      "amount_yen": 350000000000,
+      "share_pct": 68.6275,
+      "level": 1,
+      "is_top_level": true
+    }
+  ],
+  "sell_composition": [
+    {
+      "group": "total",
+      "denominator_category": "総計",
+      "category": "委託計",
+      "parent_category": "総計",
+      "amount_yen": 510000000000,
+      "share_pct": 91.8919,
+      "level": 1,
+      "is_top_level": true
+    }
+  ],
+  "net_ranking": [
+    {
+      "category": "海外投資家",
+      "buy_yen": 350000000000,
+      "sell_yen": 349550000000,
+      "diff_yen": 450000000000,
+      "direction": "net_buy",
+      "previous_diff_yen": -100000000000,
+      "diff_change_yen": 550000000000,
+      "rank_by_abs_diff": 1
+    },
+    {
+      "category": "自己計",
+      "buy_yen": 45000000000,
+      "sell_yen": 45290000000,
+      "diff_yen": -290000000000,
+      "direction": "net_sell",
+      "previous_diff_yen": -20000000000,
+      "diff_change_yen": -270000000000,
+      "rank_by_abs_diff": 2
+    }
+  ],
+  "reversals": [
+    {
+      "category": "海外投資家",
+      "from_direction": "net_sell",
+      "to_direction": "net_buy",
+      "previous_diff_yen": -100000000000,
+      "current_diff_yen": 450000000000,
+      "change_yen": 550000000000,
+      "strength": "large"
+    }
+  ],
+  "streaks": [
+    {
+      "category": "自己計",
+      "direction": "net_sell",
+      "weeks": 3,
+      "current_diff_yen": -290000000000,
+      "started_start_date": "2026-05-04",
+      "started_end_date": "2026-05-08"
+    }
+  ],
+  "major_flows": [
+    {
+      "category": "海外投資家",
+      "buy_yen": 350000000000,
+      "sell_yen": 349550000000,
+      "diff_yen": 450000000000,
+      "direction": "net_buy",
+      "previous_diff_yen": -100000000000,
+      "diff_change_yen": 550000000000
+    }
+  ]
+}
