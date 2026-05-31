@@ -1027,3 +1027,58 @@ def test_investor_flow_latest_not_found(client):
         resp = client.get("/investor-flow/latest")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "investor-flow latest not found"
+
+
+def test_investor_flow_analysis_latest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_analysis_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/analysis/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["schema_version"] == "investor-flow-analysis-v1"
+    assert data["summary"]["largest_net_buy"]["category"] == "海外投資家"
+    assert data["buy_composition"][0]["share_pct"] == 8.1001
+    assert data["reversals"][0]["strength"] == "large"
+
+
+def test_investor_flow_analysis_manifest_accepts_market_info_shape(client):
+    payload = _load_fixture("investor_flow_analysis_manifest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/analysis/manifest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["latest"]["path"] == "investor_flow_analysis_2026-05-18_to_2026-05-22.json"
+    assert len(data["weeks"]) == 2
+
+
+def test_investor_flow_analysis_week(client):
+    payload = _load_fixture("investor_flow_analysis_latest_real_shape.json")
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(return_value=payload)):
+        resp = client.get("/investor-flow/analysis/weeks/2026-05-18/2026-05-22")
+    assert resp.status_code == 200
+    assert resp.json()["previous_start_date"] == "2026-05-11"
+
+
+def test_investor_flow_analysis_week_invalid_format(client):
+    resp = client.get("/investor-flow/analysis/weeks/20260518/2026-05-22")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "start_date and end_date must be YYYY-MM-DD format"
+
+
+def test_investor_flow_analysis_week_not_found(client):
+    err = _make_http_error(
+        "https://r2.example.com/investor-flow-analysis/investor_flow_analysis_2026-01-05_to_2026-01-09.json",
+        404,
+    )
+    with patch("app.routers.investor_flow.cache.get_day", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/analysis/weeks/2026-01-05/2026-01-09")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow analysis week not found: 2026-01-05 to 2026-01-09"
+
+
+def test_investor_flow_analysis_latest_not_found(client):
+    err = _make_http_error("https://r2.example.com/investor-flow-analysis/latest.json", 404)
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/investor-flow/analysis/latest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "investor-flow analysis latest not found"

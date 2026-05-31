@@ -86,6 +86,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
 | `/investor-flow/*` | 週次 | JPX 公式 Excel 掲載後に publish |
+| `/investor-flow/analysis/*` | 週次 | investor-flow raw JSON から market_info が分析サマリーを生成して publish |
 
 ---
 
@@ -272,6 +273,43 @@ R2 更新時の扱い:
 ```
 
 `/investor-flow/weeks/{start_date}/{end_date}` は `investor-flow/investor_flow_{start_date}_to_{end_date}.json` を読む。
+`start_date` / `end_date` は YYYY-MM-DD 形式で、API 側で 422 を返す。
+
+### investor-flow analysis の manifest
+
+```json
+{
+  "data_source": "JPX",
+  "schema_version": "investor-flow-analysis-v1",
+  "latest": {
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD",
+    "path": "investor_flow_analysis_YYYY-MM-DD_to_YYYY-MM-DD.json"
+  },
+  "weeks": [
+    {
+      "start_date": "YYYY-MM-DD",
+      "end_date": "YYYY-MM-DD",
+      "path": "investor_flow_analysis_YYYY-MM-DD_to_YYYY-MM-DD.json"
+    }
+  ],
+  "generated_at_jst": "YYYY-MM-DDTHH:MM:SS+09:00"
+}
+```
+
+`/investor-flow/analysis/latest` と `/investor-flow/analysis/weeks/{start_date}/{end_date}` は、raw JSON から生成済みの分析サマリーを返す。
+API は分析計算を行わず、`investor-flow-analysis/latest.json` または
+`investor-flow-analysis/investor_flow_analysis_{start_date}_to_{end_date}.json` を読む。
+
+主な payload fields:
+
+- `summary`: 最大買い越し・最大売り越し
+- `buy_composition` / `sell_composition`: 構成比。`group` により `total` と `commission` を分ける
+- `net_ranking`: 買い越し・売り越し金額の絶対値ランキング
+- `reversals`: 前週から買い越し/売り越しが反転した主体
+- `streaks`: 同方向の継続週数
+- `major_flows`: 主要主体の買い・売り・差引
+
 `start_date` / `end_date` は YYYY-MM-DD 形式で、API 側で 422 を返す。
 
 ---

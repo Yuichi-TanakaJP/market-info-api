@@ -51,6 +51,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /investor-flow/latest` | 投資主体別売買動向（最新） |
 | `GET /investor-flow/manifest` | 投資主体別売買動向 manifest |
 | `GET /investor-flow/weeks/{start_date}/{end_date}` | 指定週の投資主体別売買動向 |
+| `GET /investor-flow/analysis/latest` | 投資主体別売買動向の分析サマリー（最新） |
+| `GET /investor-flow/analysis/manifest` | 投資主体別売買動向の分析 manifest |
+| `GET /investor-flow/analysis/weeks/{start_date}/{end_date}` | 指定週の投資主体別売買動向の分析サマリー |
 | `GET /edinet/document-list/latest` | EDINET 書類一覧（最新） |
 | `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
 | `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
@@ -98,6 +101,7 @@ curl http://localhost:8000/ranking-enriched/manifest
 curl http://localhost:8000/market-calendar/jpx-closed
 curl http://localhost:8000/market-calendar/us-closed
 curl http://localhost:8000/investor-flow/latest
+curl http://localhost:8000/investor-flow/analysis/latest
 ```
 
 ---

@@ -428,6 +428,59 @@ GET /investor-flow/weeks/{start_date}/{end_date}    # start_date/end_date: YYYY-
 → （same shape as /investor-flow/latest）
 ```
 
+### 投資主体別売買動向 分析サマリー
+
+```
+GET /investor-flow/analysis/latest
+→ {
+    "schema_version": "investor-flow-analysis-v1",
+    "data_source": "JPX",
+    "analysis_scope": "weekly_investor_flow",
+    "start_date": "2026-05-18",
+    "end_date": "2026-05-22",
+    "previous_start_date": "2026-05-11",
+    "previous_end_date": "2026-05-15",
+    "generated_at_jst": "2026-05-31T12:00:00+09:00",
+    "source_snapshot_path": "investor_flow_2026-05-18_to_2026-05-22.json",
+    "lookback_weeks": 13,
+    "summary": {
+      "largest_net_buy": {"category": "海外投資家", "diff_yen": 450000000000},
+      "largest_net_sell": {"category": "自己計", "diff_yen": -290000000000}
+    },
+    "buy_composition": [
+      {
+        "group": "commission",
+        "denominator_category": "委託計",
+        "category": "海外投資家",
+        "parent_category": "委託計",
+        "amount_yen": 350000000000,
+        "share_pct": 68.6275,
+        "level": 1,
+        "is_top_level": true
+      }
+    ],
+    "sell_composition": [...],
+    "net_ranking": [...],
+    "reversals": [...],
+    "streaks": [...],
+    "major_flows": [...]
+  }
+
+GET /investor-flow/analysis/manifest
+→ {
+    "data_source": "JPX",
+    "schema_version": "investor-flow-analysis-v1",
+    "latest": {"start_date": "2026-05-18", "end_date": "2026-05-22", "path": "investor_flow_analysis_2026-05-18_to_2026-05-22.json"},
+    "weeks": [{"start_date": "2026-05-18", "end_date": "2026-05-22", "path": "investor_flow_analysis_2026-05-18_to_2026-05-22.json"}],
+    "generated_at_jst": "2026-05-31T12:00:00+09:00"
+  }
+
+GET /investor-flow/analysis/weeks/{start_date}/{end_date}    # start_date/end_date: YYYY-MM-DD
+→ （same shape as /investor-flow/analysis/latest）
+```
+
+API は分析計算を行わず、market_info が publish した `investor-flow-analysis/*` JSON を返す。
+
 ### EDINET書類一覧
 
 ```
@@ -564,6 +617,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/market-ranking
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-rankings/dividend-yield/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/analysis/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/analysis/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/tdnet/disclosures/latest
 ```
