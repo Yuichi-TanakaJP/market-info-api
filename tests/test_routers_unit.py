@@ -1039,6 +1039,8 @@ def test_investor_flow_analysis_latest_accepts_market_info_shape(client):
     assert data["summary"]["largest_net_buy"]["category"] == "海外投資家"
     assert data["buy_composition"][0]["share_pct"] == 8.1001
     assert data["reversals"][0]["strength"] == "large"
+    assert data["history_matrix"]["weeks"][0]["start_date"] == "2026-05-18"
+    assert data["history_matrix"]["rows"][0]["cells"][0]["direction"] == "net_buy"
 
 
 def test_investor_flow_analysis_manifest_accepts_market_info_shape(client):

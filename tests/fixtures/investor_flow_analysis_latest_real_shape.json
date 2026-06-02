@@ -106,5 +106,44 @@
       "previous_diff_yen": -100000000000,
       "diff_change_yen": 550000000000
     }
-  ]
+  ],
+  "history_matrix": {
+    "weeks": [
+      {
+        "start_date": "2026-05-18",
+        "end_date": "2026-05-22",
+        "source_snapshot_path": "investor_flow_2026-05-18_to_2026-05-22.json"
+      },
+      {
+        "start_date": "2026-05-11",
+        "end_date": "2026-05-15",
+        "source_snapshot_path": "investor_flow_2026-05-11_to_2026-05-15.json"
+      }
+    ],
+    "rows": [
+      {
+        "category": "海外投資家",
+        "cells": [
+          {
+            "start_date": "2026-05-18",
+            "end_date": "2026-05-22",
+            "buy_yen": 350000000000,
+            "sell_yen": 349550000000,
+            "diff_yen": 450000000000,
+            "direction": "net_buy",
+            "strength": "medium"
+          },
+          {
+            "start_date": "2026-05-11",
+            "end_date": "2026-05-15",
+            "buy_yen": 300000000000,
+            "sell_yen": 300100000000,
+            "diff_yen": -100000000000,
+            "direction": "net_sell",
+            "strength": "medium"
+          }
+        ]
+      }
+    ]
+  }
 }

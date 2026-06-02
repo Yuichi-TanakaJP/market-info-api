@@ -128,6 +128,36 @@ class InvestorFlowMajorFlowItem(BaseModel):
     diff_change_yen: int | None
 
 
+class InvestorFlowHistoryMatrixCell(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    start_date: str | None
+    end_date: str | None
+    buy_yen: int | None
+    sell_yen: int | None
+    diff_yen: int | None
+    direction: str
+    strength: str | None
+
+
+class InvestorFlowHistoryMatrixWeek(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    start_date: str | None
+    end_date: str | None
+    source_snapshot_path: str
+
+
+class InvestorFlowHistoryMatrixRow(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    category: str
+    cells: list[InvestorFlowHistoryMatrixCell]
+
+
+class InvestorFlowHistoryMatrix(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    weeks: list[InvestorFlowHistoryMatrixWeek]
+    rows: list[InvestorFlowHistoryMatrixRow]
+
+
 class InvestorFlowAnalysisSummary(BaseModel):
     model_config = ConfigDict(extra="allow")
     largest_net_buy: InvestorFlowAnalysisCategoryAmount | None
@@ -153,6 +183,7 @@ class InvestorFlowAnalysisPayload(BaseModel):
     reversals: list[InvestorFlowReversalItem]
     streaks: list[InvestorFlowStreakItem]
     major_flows: list[InvestorFlowMajorFlowItem]
+    history_matrix: InvestorFlowHistoryMatrix | None = None
 
 
 @router.get(
