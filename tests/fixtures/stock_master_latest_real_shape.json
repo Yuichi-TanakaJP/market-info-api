@@ -1,0 +1,38 @@
+[
+  {
+    "code": "7203",
+    "name": "トヨタ自動車",
+    "display_name": "トヨタ自動車",
+    "abbrev_name": "トヨタ",
+    "short_name2": null,
+    "market": "プライム",
+    "sector": "輸送用機器",
+    "is_nikkei225": true,
+    "earnings_next_date": "2026-06-10",
+    "earnings_next_type": "本決算",
+    "earnings_history": "2026-05-08,2025-11-07",
+    "yutai_months": null,
+    "dividend_yield_pct": 2.5,
+    "dividend_per_share": 117,
+    "dividend_as_of": "2026-06-07",
+    "as_of_date": "2026-06-08"
+  },
+  {
+    "code": "1301",
+    "name": "極洋",
+    "display_name": "極洋",
+    "abbrev_name": "極洋",
+    "short_name2": null,
+    "market": "プライム",
+    "sector": "水産・農林業",
+    "is_nikkei225": false,
+    "earnings_next_date": null,
+    "earnings_next_type": null,
+    "earnings_history": null,
+    "yutai_months": "3,9",
+    "dividend_yield_pct": null,
+    "dividend_per_share": null,
+    "dividend_as_of": null,
+    "as_of_date": "2026-06-08"
+  }
+]

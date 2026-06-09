@@ -556,6 +556,17 @@ def test_yutai_month(client):
     assert resp.json()["month"] == 3
 
 
+def test_stock_master_latest(client):
+    payload = _load_fixture("stock_master_latest_real_shape.json")
+    with patch("app.routers.stock_master.cache.get_manifest", new=AsyncMock(return_value=payload)):
+        resp = client.get("/stock-master/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data[0]["code"] == "7203"
+    assert data[0]["dividend_per_share"] == 117
+    assert data[1]["dividend_yield_pct"] is None
+
+
 # --- 404 / 502 contract tests ---
 
 def _make_http_error(url: str, status: int) -> httpx.HTTPStatusError:
@@ -662,6 +673,14 @@ def test_market_calendar_us_closed_not_found(client):
         resp = client.get("/market-calendar/us-closed")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "us closed calendar not found"
+
+
+def test_stock_master_latest_not_found(client):
+    err = _make_http_error("https://r2.example.com/reference/stock-master/latest.json", 404)
+    with patch("app.routers.stock_master.cache.get_manifest", new=AsyncMock(side_effect=err)):
+        resp = client.get("/stock-master/latest")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "stock master latest not found"
 
 
 def test_nikko_credit(client):

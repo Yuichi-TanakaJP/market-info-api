@@ -83,6 +83,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/*` | 月次 | 月初に publish |
+| `/stock-master/latest` | publish 時 | 銘柄マスター生成・publish 時。latest-only reference |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
 | `/investor-flow/*` | 週次 | JPX 公式 Excel 掲載後に publish |
@@ -216,6 +217,37 @@ R2 更新時の扱い:
   ]
 }
 ```
+
+### stock-master latest
+
+`/stock-master/latest` は manifest を持たない latest-only reference endpoint。
+`reference/stock-master/latest.json` をそのまま返す。
+
+```json
+[
+  {
+    "code": "7203",
+    "name": "トヨタ自動車",
+    "display_name": "トヨタ自動車",
+    "abbrev_name": "トヨタ",
+    "short_name2": null,
+    "market": "プライム",
+    "sector": "輸送用機器",
+    "is_nikkei225": true,
+    "earnings_next_date": "2026-06-10",
+    "earnings_next_type": "本決算",
+    "earnings_history": "2026-05-08",
+    "yutai_months": null,
+    "dividend_yield_pct": 2.5,
+    "dividend_per_share": 117,
+    "dividend_as_of": "2026-06-07",
+    "as_of_date": "2026-06-08"
+  }
+]
+```
+
+`dividend_per_share` は `market_info` 側で `price×yield/100` から逆算した推定値。
+確定配当金としては扱わない。
 
 ### market-rankings の manifest
 

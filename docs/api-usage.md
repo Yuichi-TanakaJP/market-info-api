@@ -201,6 +201,34 @@ GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 → {"year": 2026, "month": 12, "records": [...]}
 ```
 
+### 銘柄マスター
+
+```
+GET /stock-master/latest
+→ [
+    {
+      "code": "7203",
+      "name": "トヨタ自動車",
+      "display_name": "トヨタ自動車",
+      "abbrev_name": "トヨタ",
+      "short_name2": null,
+      "market": "プライム",
+      "sector": "輸送用機器",
+      "is_nikkei225": true,
+      "earnings_next_date": "2026-06-10",
+      "earnings_next_type": "本決算",
+      "earnings_history": "2026-05-08",
+      "yutai_months": null,
+      "dividend_yield_pct": 2.5,
+      "dividend_per_share": 117,
+      "dividend_as_of": "2026-06-07",
+      "as_of_date": "2026-06-08"
+    }
+  ]
+```
+
+`dividend_per_share` は推定値。
+
 ### 日興一般信用
 
 ```
@@ -606,6 +634,7 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/2026-0
 curl "https://market-info-api-619599800912.asia-northeast1.run.app/topix33/range?from=2026-04-01&to=2026-04-30"
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
+curl https://market-info-api-619599800912.asia-northeast1.run.app/stock-master/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/us-closed

@@ -42,6 +42,7 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /nikko/credit` | 日興証券 信用取引取扱銘柄一覧 |
 | `GET /yutai/manifest` | 優待データ manifest |
 | `GET /yutai/monthly/{year_month}` | 指定月の優待データ |
+| `GET /stock-master/latest` | 銘柄マスター（最新） |
 | `GET /us-ranking/manifest` | 米国株ランキング manifest |
 | `GET /us-ranking/{date}` | 指定日の米国株ランキング JSON |
 | `GET /market-rankings/market-cap/manifest` | 時価総額ランキング manifest |
@@ -102,6 +103,7 @@ curl http://localhost:8000/market-calendar/jpx-closed
 curl http://localhost:8000/market-calendar/us-closed
 curl http://localhost:8000/investor-flow/latest
 curl http://localhost:8000/investor-flow/analysis/latest
+curl http://localhost:8000/stock-master/latest
 ```
 
 ---
