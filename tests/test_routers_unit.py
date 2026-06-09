@@ -567,6 +567,24 @@ def test_stock_master_latest(client):
     assert data[1]["dividend_yield_pct"] is None
 
 
+def test_stock_master_latest_fetches_array_from_r2(client):
+    payload = _load_fixture("stock_master_latest_real_shape.json")
+
+    async def fetch_without_cache(_key, fetch_fn):
+        return await fetch_fn()
+
+    with (
+        patch(
+            "app.routers.stock_master.cache.get_manifest",
+            new=AsyncMock(side_effect=fetch_without_cache),
+        ),
+        patch("app.routers.stock_master.r2.fetch_json_array", new=AsyncMock(return_value=payload)) as fetch,
+    ):
+        resp = client.get("/stock-master/latest")
+    assert resp.status_code == 200
+    fetch.assert_awaited_once_with("reference/stock-master/latest.json")
+
+
 # --- 404 / 502 contract tests ---
 
 def _make_http_error(url: str, status: int) -> httpx.HTTPStatusError:

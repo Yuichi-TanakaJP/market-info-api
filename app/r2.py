@@ -25,3 +25,15 @@ async def fetch_json(path: str) -> dict:
     if not isinstance(data, dict):
         raise RuntimeError(f"expected JSON object from {url}, got {type(data).__name__}")
     return data
+
+
+async def fetch_json_array(path: str) -> list:
+    """Fetch a JSON array from an R2 public URL."""
+    url = f"{R2_PUBLIC_BASE_URL}/{path}"
+    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+    data = resp.json()
+    if not isinstance(data, list):
+        raise RuntimeError(f"expected JSON array from {url}, got {type(data).__name__}")
+    return data

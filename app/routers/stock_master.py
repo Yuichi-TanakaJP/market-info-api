@@ -49,7 +49,7 @@ async def get_latest() -> list[dict]:
     try:
         return await cache.get_manifest(
             "stock-master/latest",
-            lambda: r2.fetch_json(_LATEST_KEY),
+            lambda: r2.fetch_json_array(_LATEST_KEY),
         )
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
