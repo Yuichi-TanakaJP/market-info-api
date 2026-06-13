@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.routers import earnings_calendar, econ_calendar, edinet, health, investor_flow, market_calendar, market_rankings, nikkei, nikko, ranking, ranking_enriched, sbi, stock_master, tdnet, topix33, us_ranking, yutai
+from app.routers import disclosure_events, earnings_calendar, econ_calendar, edinet, health, investor_flow, market_calendar, market_rankings, nikkei, nikko, ranking, ranking_enriched, sbi, stock_master, tdnet, topix33, us_ranking, yutai
 
 app = FastAPI(
     title="market-info-api",
@@ -52,7 +52,9 @@ app = FastAPI(
         "| `/edinet/document-list/latest` | 平日 1日1回 | 可変（6時間） |\n"
         "| `/edinet/document-list/{date}` | 1日1回 | 不変（24時間） |\n"
         "| `/tdnet/disclosures/latest` | 平日 1日1回 | 可変（6時間） |\n"
-        "| `/tdnet/disclosures/{date}` | 1日1回 | 不変（24時間） |\n\n"
+        "| `/tdnet/disclosures/{date}` | 1日1回 | 不変（24時間） |\n"
+        "| `/disclosure-events/latest`, `/manifest` | 平日 1日1回 | 可変（6時間） |\n"
+        "| `/disclosure-events/{date}` | 1日1回 | 不変（24時間） |\n\n"
         "> **ポーリングはデータの更新頻度に基づいて決定すること**（キャッシュ TTL ではなく）。"
         "全データは最短でも 1日1回の更新のため、ポーリング自体が不要なケースがほとんど。"
     ),
@@ -75,4 +77,5 @@ app.include_router(us_ranking.router)
 app.include_router(edinet.router)
 app.include_router(econ_calendar.router)
 app.include_router(tdnet.router)
+app.include_router(disclosure_events.router)
 app.include_router(investor_flow.router)

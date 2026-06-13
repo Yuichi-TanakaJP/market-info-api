@@ -570,6 +570,59 @@ GET /tdnet/disclosures/{date}    # date: YYYY-MM-DD
 → （same shape as /tdnet/disclosures/latest）
 ```
 
+## Disclosure events
+
+```bash
+curl "$MARKET_INFO_API_BASE_URL/disclosure-events/latest"
+curl "$MARKET_INFO_API_BASE_URL/disclosure-events/manifest"
+curl "$MARKET_INFO_API_BASE_URL/disclosure-events/2026-06-12"
+```
+
+`latest` と日付指定は同じレスポンス形式を返す。
+
+```json
+{
+  "schema_version": "disclosure-events-v1",
+  "target_date": "2026-06-12",
+  "generated_at": "2026-06-12T22:00:00+09:00",
+  "total_count": 1,
+  "items": [
+    {
+      "event_id": "tdnet-aaaaaaaaaaaaaaaaaaaa",
+      "source": "tdnet",
+      "event_type": "yutai_end",
+      "audience": "all",
+      "priority": "high",
+      "needs_review": false,
+      "disclosure_date": "2026-06-12",
+      "disclosure_time": "15:30",
+      "security_code": "12340",
+      "company_name": "サンプル",
+      "title": "株主優待制度の廃止に関するお知らせ",
+      "disclosure_category": "株式制度/優待",
+      "source_url": "https://example.com/a.pdf",
+      "pdf_url": "https://example.com/a.pdf",
+      "html_url": "",
+      "xbrl_url": ""
+    }
+  ]
+}
+```
+
+manifest:
+
+```json
+{
+  "schema_version": "disclosure-events-manifest-v1",
+  "generated_at": "2026-06-12T22:00:00+09:00",
+  "latest": "2026-06-12",
+  "dates": ["2026-06-11", "2026-06-12"]
+}
+```
+
+`audience=all` は全銘柄対象の優待変更、`audience=personal` はクライアント側で
+保有・ウォッチコードと照合するイベントを表す。APIへ個人の銘柄コードは送らない。
+
 PDF / HTML / XBRL は再ホストせず、TDNET 原文 URL を返す。
 
 ### JPX休場日

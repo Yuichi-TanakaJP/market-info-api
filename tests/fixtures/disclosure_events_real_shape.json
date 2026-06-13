@@ -1,0 +1,44 @@
+{
+  "schema_version": "disclosure-events-v1",
+  "target_date": "2026-06-12",
+  "generated_at": "2026-06-12T22:00:00+09:00",
+  "total_count": 2,
+  "items": [
+    {
+      "event_id": "tdnet-aaaaaaaaaaaaaaaaaaaa",
+      "source": "tdnet",
+      "event_type": "yutai_end",
+      "audience": "all",
+      "priority": "high",
+      "needs_review": false,
+      "disclosure_date": "2026-06-12",
+      "disclosure_time": "15:30",
+      "security_code": "12340",
+      "company_name": "サンプル",
+      "title": "株主優待制度の廃止に関するお知らせ",
+      "disclosure_category": "株式制度/優待",
+      "source_url": "https://example.com/a.pdf",
+      "pdf_url": "https://example.com/a.pdf",
+      "html_url": "",
+      "xbrl_url": ""
+    },
+    {
+      "event_id": "tdnet-bbbbbbbbbbbbbbbbbbbb",
+      "source": "tdnet",
+      "event_type": "dividend_decrease",
+      "audience": "personal",
+      "priority": "high",
+      "needs_review": false,
+      "disclosure_date": "2026-06-12",
+      "disclosure_time": "15:00",
+      "security_code": "56780",
+      "company_name": "配当サンプル",
+      "title": "配当予想の修正（減配）に関するお知らせ",
+      "disclosure_category": "業績・配当予想/配当",
+      "source_url": "https://example.com/b.pdf",
+      "pdf_url": "https://example.com/b.pdf",
+      "html_url": "",
+      "xbrl_url": ""
+    }
+  ]
+}
