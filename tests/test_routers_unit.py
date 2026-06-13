@@ -26,6 +26,7 @@ def client(monkeypatch):
     import app.routers.sbi as sbi_mod
     import app.routers.topix33 as topix33_mod
     import app.routers.tdnet as tdnet_mod
+    import app.routers.disclosure_events as disclosure_events_mod
     import app.routers.yutai as yutai_mod
     import app.routers.market_rankings as market_rankings_mod
     import app.routers.investor_flow as investor_flow_mod
@@ -37,11 +38,14 @@ def client(monkeypatch):
     importlib.reload(sbi_mod)
     importlib.reload(topix33_mod)
     importlib.reload(tdnet_mod)
+    importlib.reload(disclosure_events_mod)
     importlib.reload(yutai_mod)
     importlib.reload(market_rankings_mod)
     importlib.reload(investor_flow_mod)
-    from app.main import app
-    return TestClient(app)
+    import app.main as main_mod
+    importlib.reload(main_mod)
+    with TestClient(main_mod.app) as test_client:
+        yield test_client
 
 
 _FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -1007,6 +1011,78 @@ def test_tdnet_disclosures_latest_502(client):
     with patch("app.routers.tdnet.cache.get_manifest", new=AsyncMock(side_effect=err)):
         resp = client.get("/tdnet/disclosures/latest")
     assert resp.status_code == 502
+
+
+# disclosure events
+
+
+def test_disclosure_events_latest_accepts_real_shape(client):
+    from app.routers import disclosure_events
+
+    payload = _load_fixture("disclosure_events_real_shape.json")
+    with patch.object(
+        disclosure_events.cache,
+        "get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        resp = client.get("/disclosure-events/latest")
+
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["event_type"] == "yutai_end"
+
+
+def test_disclosure_events_manifest_accepts_real_shape(client):
+    from app.routers import disclosure_events
+
+    payload = _load_fixture("disclosure_events_manifest_real_shape.json")
+    with patch.object(
+        disclosure_events.cache,
+        "get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        resp = client.get("/disclosure-events/manifest")
+
+    assert resp.status_code == 200
+    assert resp.json()["latest"] == "2026-06-12"
+
+
+def test_disclosure_events_by_date(client):
+    from app.routers import disclosure_events
+
+    payload = _load_fixture("disclosure_events_real_shape.json")
+    with patch.object(
+        disclosure_events.cache,
+        "get_day",
+        new=AsyncMock(return_value=payload),
+    ):
+        resp = client.get("/disclosure-events/2026-06-12")
+
+    assert resp.status_code == 200
+    assert resp.json()["total_count"] == 2
+
+
+def test_disclosure_events_by_date_invalid_format(client):
+    resp = client.get("/disclosure-events/20260612")
+    assert resp.status_code == 422
+
+
+def test_disclosure_events_latest_not_found(client):
+    from app.routers import disclosure_events
+
+    err = _make_http_error(
+        "https://r2.example.com/disclosure-events/latest.json",
+        404,
+    )
+    with patch.object(
+        disclosure_events.cache,
+        "get_manifest",
+        new=AsyncMock(side_effect=err),
+    ):
+        resp = client.get("/disclosure-events/latest")
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "disclosure events latest not found"
+
 
 
 # ---------------------------------------------------------------------------

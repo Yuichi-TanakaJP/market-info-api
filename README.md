@@ -59,6 +59,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
 | `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
 | `GET /tdnet/disclosures/{date}` | 指定日の TDNET 全適時開示一覧 |
+| `GET /disclosure-events/latest` | 正規化済み開示イベント（最新） |
+| `GET /disclosure-events/manifest` | 開示イベント日付一覧 |
+| `GET /disclosure-events/{date}` | 指定日の正規化済み開示イベント |
 | `GET /econ-calendar/weekly` | 今週の経済指標カレンダー |
 | `GET /econ-calendar/weekly/meta` | 経済指標カレンダー更新メタ情報 |
 
