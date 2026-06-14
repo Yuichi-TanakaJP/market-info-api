@@ -623,6 +623,16 @@ manifest:
 `audience=all` は全銘柄対象の優待変更、`audience=personal` はクライアント側で
 保有・ウォッチコードと照合するイベントを表す。APIへ個人の銘柄コードは送らない。
 
+Cache headers:
+
+- `GET /disclosure-events/{date}`:
+  `Cache-Control: public, max-age=31536000, immutable`
+- `GET /disclosure-events/manifest` and `GET /disclosure-events/latest`:
+  `Cache-Control: public, max-age=300`
+
+日付別レスポンスは不変のため、ブラウザやCDNが長期再利用できる。manifestは短期確認し、
+新しく追加された日付だけを取得する。
+
 PDF / HTML / XBRL は再ホストせず、TDNET 原文 URL を返す。
 
 ### JPX休場日
