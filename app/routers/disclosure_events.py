@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
@@ -55,8 +55,9 @@ class DisclosureEventsManifest(BaseModel):
 
 
 @router.get("/latest", response_model=DisclosureEventsPayload)
-async def get_latest() -> dict:
+async def get_latest(response: Response) -> dict:
     """最新日の正規化済み開示イベントを返す。キャッシュTTL: 6時間。"""
+    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/latest",
@@ -73,8 +74,9 @@ async def get_latest() -> dict:
 
 
 @router.get("/manifest", response_model=DisclosureEventsManifest)
-async def get_manifest() -> dict:
+async def get_manifest(response: Response) -> dict:
     """利用可能な日付一覧を返す。キャッシュTTL: 6時間。"""
+    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/manifest",
@@ -85,10 +87,11 @@ async def get_manifest() -> dict:
 
 
 @router.get("/{date}", response_model=DisclosureEventsPayload)
-async def get_by_date(date: str) -> dict:
+async def get_by_date(date: str, response: Response) -> dict:
     """指定日の正規化済み開示イベントを返す。キャッシュTTL: 24時間。"""
     if not _DATE_RE.match(date):
         raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD format")
+    response.headers["Cache-Control"] = cache.IMMUTABLE_HTTP_CACHE_CONTROL
     try:
         return await cache.get_day(
             f"{_PREFIX}/{date}",
