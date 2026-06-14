@@ -451,6 +451,18 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 
 > この TTL 設計は market_info の publish スケジュールに依存する。**最短更新間隔が 24時間未満に変わった場合は TTL を合わせて見直すこと**。設計ルールの正本は `market_info/docs/reference/policy_decision_rules.md` を参照。
 
+上表はCloud Runプロセス内キャッシュのTTLであり、HTTPレスポンスキャッシュとは別レイヤー。
+開示イベントでは次のHTTP `Cache-Control`を返す。
+
+| Endpoint | HTTP Cache-Control | 理由 |
+|---|---|---|
+| `/disclosure-events/{date}` | `public, max-age=31536000, immutable` | 日付別artifactはpublish後に変更しない |
+| `/disclosure-events/manifest` | `public, max-age=300` | 新しい日付の追加を5分以内に確認する |
+| `/disclosure-events/latest` | `public, max-age=300` | 次回publishで参照先内容が変わる |
+
+ブラウザキャッシュは通信量削減の補助であり、永続保存先ではない。端末やブラウザが
+キャッシュを削除した場合は同じ日付別endpointを再取得すればよい。
+
 TTL の実装値は `app/cache.py` の `_MANIFEST_TTL`（21600秒）/ `_DAY_TTL`（86400秒）を参照。
 range response は latest/current period を含む場合 `_MANIFEST_TTL`、過去 immutable source のみの場合 `_DAY_TTL` を使う。
 search index も同じ TTL 方針を使う。
