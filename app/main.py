@@ -2,7 +2,27 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.routers import disclosure_events, earnings_calendar, econ_calendar, edinet, health, investor_flow, market_calendar, market_rankings, nikkei, nikko, ranking, ranking_enriched, sbi, stock_master, tdnet, topix33, us_ranking, yutai
+from app.routers import (
+    disclosure_events,
+    earnings_calendar,
+    econ_calendar,
+    edinet,
+    health,
+    investor_flow,
+    market_calendar,
+    market_rankings,
+    nikkei,
+    nikko,
+    ranking,
+    ranking_enriched,
+    sbi,
+    stock_master,
+    tdnet,
+    topix33,
+    us_ranking,
+    yutai,
+    yutai_stock_prices,
+)
 
 app = FastAPI(
     title="market-info-api",
@@ -47,6 +67,7 @@ app = FastAPI(
         "| `/nikko/credit` | 不定期 | 可変（6時間） |\n"
         "| `/yutai/manifest` | 月次 | 可変（6時間） |\n"
         "| `/yutai/monthly/{year_month}` | 月次 | 不変（24時間） |\n"
+        "| `/yutai/stock-prices/latest` | 日次 | 可変（6時間・private） |\n"
         "| `/stock-master/latest` | publish 時 | 可変（6時間） |\n"
         "| `/market-calendar/*` | 不定期（年次更新時） | 可変（6時間） |\n"
         "| `/edinet/document-list/latest` | 平日 1日1回 | 可変（6時間） |\n"
@@ -71,6 +92,7 @@ app.include_router(nikko.router)
 app.include_router(market_calendar.router)
 app.include_router(topix33.router)
 app.include_router(yutai.router)
+app.include_router(yutai_stock_prices.router)
 app.include_router(stock_master.router)
 app.include_router(market_rankings.router)
 app.include_router(us_ranking.router)

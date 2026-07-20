@@ -42,6 +42,7 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /nikko/credit` | 日興証券 信用取引取扱銘柄一覧 |
 | `GET /yutai/manifest` | 優待データ manifest |
 | `GET /yutai/monthly/{year_month}` | 指定月の優待データ |
+| `GET /yutai/stock-prices/latest` | 優待向け最新株価（Bearer 認証必須・Private R2） |
 | `GET /stock-master/latest` | 銘柄マスター（最新） |
 | `GET /us-ranking/manifest` | 米国株ランキング manifest |
 | `GET /us-ranking/{date}` | 指定日の米国株ランキング JSON |
@@ -83,13 +84,25 @@ uvicorn app.main:app --reload
 | 変数名 | 必須 | 説明 |
 |--------|------|------|
 | `R2_PUBLIC_BASE_URL` | 必須 | Cloudflare R2 のパブリック URL（末尾スラッシュなし） |
-| `MARKET_INFO_API_KEY` | 任意 | 設定した場合、API キー認証が有効になる |
+| `MARKET_INFO_API_KEY` | 任意 | 将来の全体認証用予約値（現在は未使用） |
+| `YUTAI_STOCK_PRICES_API_KEY` | 優待株価 API 使用時は必須 | mini-tools サーバーとの Bearer 認証キー |
+| `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | 同上 | 優待株価を保存した Private R2 bucket |
+| `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | 同上 | R2 S3 API endpoint |
+| `YUTAI_STOCK_PRICES_PRIVATE_ACCESS_KEY_ID` | 同上 | Private R2 読み取り用 access key |
+| `YUTAI_STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY` | 同上 | Private R2 読み取り用 secret key |
+| `YUTAI_STOCK_PRICES_PRIVATE_REGION` | 任意 | S3 region。既定値は `auto` |
 
 `.env` ファイルを使う場合:
 
 ```env
 R2_PUBLIC_BASE_URL=https://pub-xxxx.r2.dev
 MARKET_INFO_API_KEY=
+YUTAI_STOCK_PRICES_API_KEY=
+YUTAI_STOCK_PRICES_PRIVATE_BUCKET=mini-tools-private
+YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+YUTAI_STOCK_PRICES_PRIVATE_ACCESS_KEY_ID=
+YUTAI_STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY=
+YUTAI_STOCK_PRICES_PRIVATE_REGION=auto
 ```
 
 ---
@@ -107,7 +120,12 @@ curl http://localhost:8000/market-calendar/us-closed
 curl http://localhost:8000/investor-flow/latest
 curl http://localhost:8000/investor-flow/analysis/latest
 curl http://localhost:8000/stock-master/latest
+curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
+  http://localhost:8000/yutai/stock-prices/latest
 ```
+
+`YUTAI_STOCK_PRICES_API_KEY` と R2 credentials はサーバーだけに設定する。mini-tools の
+ブラウザーコードや公開環境変数へ渡してはならない。
 
 ---
 

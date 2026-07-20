@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "scope_month": "2026-07",
+  "generated_at": "2026-07-20T06:05:04+00:00",
+  "provider": "yahoo_finance_chart",
+  "source_batch_dates": [
+    "2026-07-19",
+    "2026-07-20"
+  ],
+  "record_count": 2,
+  "success_count": 1,
+  "records": [
+    {
+      "code": "1000",
+      "target_months": ["2026-07"],
+      "status": "ok",
+      "price": 100.5,
+      "price_date": "2026-07-17",
+      "fetched_at": "2026-07-20T05:50:00+00:00",
+      "error_code": null
+    },
+    {
+      "code": "1001",
+      "target_months": ["2026-08", "2026-09"],
+      "status": "error",
+      "price": null,
+      "price_date": null,
+      "fetched_at": "2026-07-20T05:51:00+00:00",
+      "error_code": "provider_fetch_failed"
+    }
+  ]
+}
