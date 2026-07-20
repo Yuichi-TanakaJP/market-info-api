@@ -69,8 +69,21 @@ Cloud Run は「リクエストがないときは課金されない（コール�
 | 変数名 | 値 |
 |--------|-----|
 | `R2_PUBLIC_BASE_URL` | `https://pub-b1f1de37018549c8a5ae3e6f9a7a1c6c.r2.dev` |
+| `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | Private R2 bucket 名 |
+| `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
+| `YUTAI_STOCK_PRICES_PRIVATE_REGION` | `auto` |
 
 `/market-calendar/jpx-closed` は `market_closed/jpx_market_closed_latest.json` を固定参照するため、追加の object key 設定は不要。
+
+次の値は平文の環境変数ではなく Secret Manager から参照させる。
+
+- `YUTAI_STOCK_PRICES_API_KEY`
+- `YUTAI_STOCK_PRICES_PRIVATE_ACCESS_KEY_ID`
+- `YUTAI_STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY`
+
+R2 credentials は対象 bucket の読み取り権限だけを持つ専用tokenにする。
+`YUTAI_STOCK_PRICES_API_KEY` は mini-tools backend と同じ値を設定するが、
+ブラウザー向け環境変数や公開ログには記録しない。
 
 ---
 

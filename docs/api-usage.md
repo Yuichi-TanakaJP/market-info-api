@@ -201,6 +201,39 @@ GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 → {"year": 2026, "month": 12, "records": [...]}
 ```
 
+### 優待向け最新株価（Private）
+
+```http
+GET /yutai/stock-prices/latest
+Authorization: Bearer <YUTAI_STOCK_PRICES_API_KEY>
+```
+
+```json
+{
+  "schema_version": 1,
+  "scope_month": "2026-07",
+  "generated_at": "2026-07-20T06:05:04+00:00",
+  "provider": "yahoo_finance_chart",
+  "source_batch_dates": ["2026-07-19", "2026-07-20"],
+  "record_count": 2,
+  "success_count": 1,
+  "records": [
+    {
+      "code": "1000",
+      "target_months": ["2026-07"],
+      "status": "ok",
+      "price": 100.5,
+      "price_date": "2026-07-17",
+      "fetched_at": "2026-07-20T05:50:00+00:00",
+      "error_code": null
+    }
+  ]
+}
+```
+
+Bearer token は mini-tools backend だけが付与する。ブラウザーからこの endpoint を
+直接呼ばない。
+
 ### 銘柄マスター
 
 ```
@@ -677,6 +710,12 @@ GET /market-calendar/us-closed
 | 変数名 | 用途 |
 |------|------|
 | `R2_PUBLIC_BASE_URL` | 公開 JSON の取得元ベース URL |
+| `YUTAI_STOCK_PRICES_API_KEY` | 優待株価 endpoint のサーバー間 Bearer token |
+| `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | Private R2 bucket 名 |
+| `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | Private R2 S3 API endpoint |
+| `YUTAI_STOCK_PRICES_PRIVATE_ACCESS_KEY_ID` | Private R2 読み取り用 access key |
+| `YUTAI_STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY` | Private R2 読み取り用 secret key |
+| `YUTAI_STOCK_PRICES_PRIVATE_REGION` | S3 region（既定: `auto`） |
 
 ---
 
@@ -697,6 +736,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/topix33/2026-0
 curl "https://market-info-api-619599800912.asia-northeast1.run.app/topix33/range?from=2026-04-01&to=2026-04-30"
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/monthly/2026-12
+curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
+  https://market-info-api-619599800912.asia-northeast1.run.app/yutai/stock-prices/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/stock-master/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/nikko/credit
 curl https://market-info-api-619599800912.asia-northeast1.run.app/market-calendar/jpx-closed

@@ -39,9 +39,11 @@ API contract を変更する前に、次の docs を確認する。
 
 | コード | 意味 | mini-tools 側の対応 |
 |--------|------|---------------------|
+| 401 | Private endpoint の Bearer token がない、または不一致 | mini-tools サーバー設定を確認し、ブラウザーへ token を返さない |
 | 404 | 指定日・月のデータが R2 に存在しない | ローカル fallback に切り替える |
 | 422 | パスパラメータの形式不正 | リクエスト前にバリデーションする |
 | 502 | R2 からの取得失敗（ネットワーク障害・認証エラー等） | ローカル fallback に切り替える |
+| 503 | Private endpoint のサーバー認証または R2 設定不足 | 運用設定を修正する。公開 fallback は作らない |
 
 ### Fallback 設計
 
@@ -83,7 +85,8 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
-| `/yutai/*` | 月次 | 月初に publish |
+| `/yutai/manifest`, `/yutai/monthly/*` | 月次 | 月初に publish |
+| `/yutai/stock-prices/latest` | 日次 | Private R2 の latest を返す。サーバー cache は6時間 |
 | `/stock-master/latest` | publish 時 | 銘柄マスター生成・publish 時。latest-only reference |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
@@ -351,16 +354,20 @@ API は分析計算を行わず、`investor-flow-analysis/latest.json` または
 
 ### 現状
 
-現在は認証なし。Cloud Run は公開アクセス許可のため、誰でも API を叩ける。  
-`app/config.py` に `MARKET_INFO_API_KEY` が定義されているが、未実装。
+既存の公開 endpoint は認証なし。Cloud Run 自体は公開アクセスを許可している。
+`MARKET_INFO_API_KEY` は全体認証用の予約値で、現在は未実装。
 
-### 将来構想（issue #19）
+`GET /yutai/stock-prices/latest` だけは `Authorization: Bearer <token>` を必須とする。
+照合値はサーバー環境変数 `YUTAI_STOCK_PRICES_API_KEY` であり、未設定時も公開せず
+503で fail closed する。token がない、または不一致なら401を返す。
 
-`MARKET_INFO_API_KEY` 環境変数を設定することで API キー認証を有効にする予定。  
-クライアントは `X-API-Key` ヘッダーにキーを付与してリクエストする。  
-未設定の場合は認証なし（ローカル開発・テスト用）のまま。
+この token と Private R2 credentials は market-info-api / mini-tools のサーバー間だけで
+扱う。mini-tools のブラウザーは、自身の Premium session を mini-tools backend に提示する。
+mini-tools backend が Premium を検証した後に、この Bearer token を付けて本 endpoint を呼ぶ。
+token をブラウザー、HTML、JavaScript bundle、`NEXT_PUBLIC_*` へ含めてはならない。
 
-mini-tools 側も合わせてキー付与の対応が必要になる。
+レスポンスは `Cache-Control: private, no-store` とする。Cloud Run process 内では
+`latest` を6時間 cache するため、R2 read はリクエストごとには発生しない。
 
 ---
 
@@ -459,6 +466,7 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 | `/disclosure-events/{date}` | `public, max-age=31536000, immutable` | 日付別artifactはpublish後に変更しない |
 | `/disclosure-events/manifest` | `public, max-age=300` | 新しい日付の追加を5分以内に確認する |
 | `/disclosure-events/latest` | `public, max-age=300` | 次回publishで参照先内容が変わる |
+| `/yutai/stock-prices/latest` | `private, no-store` | Premium向け株価をブラウザー/CDNへ保存させない |
 
 ブラウザキャッシュは通信量削減の補助であり、永続保存先ではない。端末やブラウザが
 キャッシュを削除した場合は同じ日付別endpointを再取得すればよい。
