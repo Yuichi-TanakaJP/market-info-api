@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 
 
@@ -109,6 +110,38 @@ def test_latest_fails_closed_when_private_r2_is_not_configured(private_client):
         )
 
     assert response.status_code == 503
+    assert response.headers["cache-control"] == "private, no-store"
+
+
+@pytest.mark.parametrize(
+    ("error_code", "expected_status"),
+    [
+        ("NoSuchKey", 404),
+        ("NoSuchBucket", 502),
+    ],
+)
+def test_latest_distinguishes_missing_object_from_missing_bucket(
+    private_client,
+    error_code,
+    expected_status,
+):
+    upstream_error = ClientError(
+        {
+            "Error": {"Code": error_code, "Message": error_code},
+            "ResponseMetadata": {"HTTPStatusCode": 404},
+        },
+        "GetObject",
+    )
+    with patch(
+        "app.routers.yutai_stock_prices.cache.get_manifest",
+        new=AsyncMock(side_effect=upstream_error),
+    ):
+        response = private_client.get(
+            "/yutai/stock-prices/latest",
+            headers={"Authorization": "Bearer test-server-secret"},
+        )
+
+    assert response.status_code == expected_status
     assert response.headers["cache-control"] == "private, no-store"
 
 

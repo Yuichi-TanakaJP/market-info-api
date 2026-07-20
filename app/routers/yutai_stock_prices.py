@@ -75,9 +75,8 @@ async def get_latest(response: Response) -> dict:
             lambda: private_r2.fetch_json(_LATEST_KEY),
         )
     except ClientError as exc:
-        status = int(exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0))
         code = str(exc.response.get("Error", {}).get("Code", ""))
-        if status == 404 or code in {"404", "NoSuchKey", "NotFound"}:
+        if code in {"NoSuchKey", "NotFound"}:
             raise _private_error(
                 404,
                 "private yutai stock prices not found",
