@@ -86,6 +86,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/manifest`, `/yutai/monthly/*` | 月次 | 月初に publish |
+| `/yutai/launch-display/*` | 月次・随時 | Private R2 の launch-display JSON を返す。サーバー cache は6時間 |
 | `/yutai/stock-prices/latest` | 日次 | Private R2 の latest を返す。サーバー cache は6時間 |
 | `/stock-master/latest` | publish 時 | 銘柄マスター生成・publish 時。latest-only reference |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
@@ -222,6 +223,30 @@ R2 更新時の扱い:
 }
 ```
 
+### yutai launch-display manifest
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "source": "market_info_yutai_launch_display",
+  "latest_month": "YYYY-MM",
+  "latest_path": "latest.json",
+  "months": [
+    {
+      "month": "YYYY-MM",
+      "path": "YYYY-MM.json",
+      "count": 288,
+      "conditions_available": 42,
+      "auto_calculable": 33,
+      "requires_user_valuation": 9
+    }
+  ]
+}
+```
+
+`/yutai/launch-display/latest` は `yutai/launch-display/latest.json`、`/yutai/launch-display/monthly/{year_month}` は `yutai/launch-display/{year_month}.json` を読む。
+
 ### stock-master latest
 
 `/stock-master/latest` は manifest を持たない latest-only reference endpoint。
@@ -357,7 +382,7 @@ API は分析計算を行わず、`investor-flow-analysis/latest.json` または
 既存の公開 endpoint は認証なし。Cloud Run 自体は公開アクセスを許可している。
 `MARKET_INFO_API_KEY` は全体認証用の予約値で、現在は未実装。
 
-`GET /yutai/stock-prices/latest` だけは `Authorization: Bearer <token>` を必須とする。
+`GET /yutai/stock-prices/latest` と `GET /yutai/launch-display/*` は `Authorization: Bearer <token>` を必須とする。
 照合値はサーバー環境変数 `YUTAI_STOCK_PRICES_API_KEY` であり、未設定時も公開せず
 503で fail closed する。token がない、または不一致なら401を返す。
 
@@ -467,6 +492,7 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 | `/disclosure-events/manifest` | `public, max-age=300` | 新しい日付の追加を5分以内に確認する |
 | `/disclosure-events/latest` | `public, max-age=300` | 次回publishで参照先内容が変わる |
 | `/yutai/stock-prices/latest` | `private, no-store` | Premium向け株価をブラウザー/CDNへ保存させない |
+| `/yutai/launch-display/*` | `private, no-store` | Premium向け優待条件・計算用データをブラウザー/CDNへ保存させない |
 
 ブラウザキャッシュは通信量削減の補助であり、永続保存先ではない。端末やブラウザが
 キャッシュを削除した場合は同じ日付別endpointを再取得すればよい。
