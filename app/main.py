@@ -21,6 +21,7 @@ from app.routers import (
     topix33,
     us_ranking,
     yutai,
+    yutai_launch_display,
     yutai_stock_prices,
 )
 
@@ -67,6 +68,9 @@ app = FastAPI(
         "| `/nikko/credit` | 不定期 | 可変（6時間） |\n"
         "| `/yutai/manifest` | 月次 | 可変（6時間） |\n"
         "| `/yutai/monthly/{year_month}` | 月次 | 不変（24時間） |\n"
+        "| `/yutai/launch-display/latest` | 月次 | 可変（6時間・private） |\n"
+        "| `/yutai/launch-display/manifest` | 月次 | 可変（6時間・private） |\n"
+        "| `/yutai/launch-display/monthly/{year_month}` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/stock-prices/latest` | 日次 | 可変（6時間・private） |\n"
         "| `/stock-master/latest` | publish 時 | 可変（6時間） |\n"
         "| `/market-calendar/*` | 不定期（年次更新時） | 可変（6時間） |\n"
@@ -92,6 +96,7 @@ app.include_router(nikko.router)
 app.include_router(market_calendar.router)
 app.include_router(topix33.router)
 app.include_router(yutai.router)
+app.include_router(yutai_launch_display.router)
 app.include_router(yutai_stock_prices.router)
 app.include_router(stock_master.router)
 app.include_router(market_rankings.router)

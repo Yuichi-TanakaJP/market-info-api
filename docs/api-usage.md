@@ -201,6 +201,47 @@ GET /yutai/monthly/{year_month}    # year_month: YYYY-MM
 → {"year": 2026, "month": 12, "records": [...]}
 ```
 
+### 優待ローンチ表示用データ（Private）
+
+```http
+GET /yutai/launch-display/latest
+GET /yutai/launch-display/manifest
+GET /yutai/launch-display/monthly/{year_month}
+Authorization: Bearer <YUTAI_STOCK_PRICES_API_KEY>
+```
+
+```json
+{
+  "schema_version": 1,
+  "month": "2026-09",
+  "record_count": 288,
+  "counts": {
+    "total": 288,
+    "conditions_available": 42,
+    "needs_normalization": 246,
+    "auto_calculable": 33,
+    "requires_user_valuation": 9,
+    "excluded_from_initial_calculation": 0
+  },
+  "records": [
+    {
+      "month": "2026-09",
+      "code": "1822",
+      "company_name": "大豊建設",
+      "nikko_watch_state": "crossable",
+      "nikko_general_short": true,
+      "nikko_available_shares": 600,
+      "display_status": "conditions_available",
+      "calculation_status": "auto_calculable",
+      "programs": []
+    }
+  ]
+}
+```
+
+Bearer token は mini-tools backend だけが付与する。ブラウザーからこの endpoint を
+直接呼ばない。
+
 ### 優待向け最新株価（Private）
 
 ```http
@@ -710,7 +751,7 @@ GET /market-calendar/us-closed
 | 変数名 | 用途 |
 |------|------|
 | `R2_PUBLIC_BASE_URL` | 公開 JSON の取得元ベース URL |
-| `YUTAI_STOCK_PRICES_API_KEY` | 優待株価 endpoint のサーバー間 Bearer token |
+| `YUTAI_STOCK_PRICES_API_KEY` | 優待 private endpoint のサーバー間 Bearer token |
 | `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | Private R2 bucket 名 |
 | `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | Private R2 S3 API endpoint |
 | `YUTAI_STOCK_PRICES_PRIVATE_ACCESS_KEY_ID` | Private R2 読み取り用 access key |
