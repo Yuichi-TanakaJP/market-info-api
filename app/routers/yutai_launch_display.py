@@ -26,6 +26,8 @@ class YutaiLaunchDisplayCounts(BaseModel):
     auto_calculable: int = Field(ge=0)
     requires_user_valuation: int = Field(ge=0)
     excluded_from_initial_calculation: int = Field(ge=0)
+    has_long_term_benefit: int = Field(default=0, ge=0)
+    requires_long_term_holding: int = Field(default=0, ge=0)
 
 
 class YutaiLaunchDisplayWatchStateCounts(BaseModel):
@@ -110,6 +112,17 @@ class YutaiLaunchDisplayProgram(BaseModel):
     notes: str | None = None
 
 
+class YutaiLaunchDisplayLongTermTier(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    program_id: str
+    program_label: str
+    minimum_shares: int = Field(ge=0)
+    maximum_shares: int | None = Field(default=None, ge=0)
+    required_holding_months: int = Field(ge=0)
+    groups: list[YutaiLaunchDisplayGroup]
+
+
 class YutaiLaunchDisplayRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -136,6 +149,12 @@ class YutaiLaunchDisplayRecord(BaseModel):
         "user_input_required",
     ]
     requires_user_valuation: bool
+    has_long_term_benefit: bool = False
+    requires_long_term_holding: bool = False
+    long_term_required_holding_months: list[int] = Field(default_factory=list)
+    long_term_benefit_tiers: list[YutaiLaunchDisplayLongTermTier] = Field(
+        default_factory=list
+    )
     normalized_status: str | None = None
     normalized_as_of_date: str | None = None
     normalized_source_urls: list[str]
