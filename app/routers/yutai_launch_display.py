@@ -55,6 +55,16 @@ class YutaiLaunchDisplayReadiness(BaseModel):
     needs_normalization: int = Field(ge=0)
 
 
+class YutaiLaunchDisplayDiscountTerm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str | None = None
+    discount_rate_pct: float = Field(ge=0, le=100)
+    quantity: float | None = Field(default=None, ge=0)
+    unit: str | None = None
+    notes: str | None = None
+
+
 class YutaiLaunchDisplayItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -68,6 +78,8 @@ class YutaiLaunchDisplayItem(BaseModel):
     ]
     quantity: float | None = Field(default=None, ge=0)
     unit: str | None = None
+    discount_rate_pct: float | None = Field(default=None, ge=0, le=100)
+    discount_terms: list[YutaiLaunchDisplayDiscountTerm] | None = None
     notes: str | None = None
 
 
