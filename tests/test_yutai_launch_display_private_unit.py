@@ -106,6 +106,39 @@ def test_latest_accepts_crossable_with_caution_watch_state(private_client):
     assert response.status_code == 200
     assert response.json()["records"][0]["nikko_watch_state"] == "crossable_with_caution"
 
+
+
+def test_latest_accepts_discount_metadata(private_client):
+    payload = _payload()
+    record = next(record for record in payload["records"] if record["programs"])
+    item = record["programs"][0]["tiers"][0]["groups"][0]["items"][0]
+    item["kind"] = "discount"
+    item["valuation_policy"] = "user_estimate_required"
+    item["official_value_yen"] = None
+    item["discount_terms"] = [
+        {
+            "label": "店舗",
+            "discount_rate_pct": 20,
+            "quantity": 1,
+            "unit": "枚",
+            "notes": "テスト",
+        }
+    ]
+    with patch(
+        "app.routers.yutai_launch_display.cache.get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        response = private_client.get(
+            "/yutai/launch-display/latest",
+            headers={"Authorization": "Bearer test-server-secret"},
+        )
+
+    assert response.status_code == 200
+    response_record = next(record for record in response.json()["records"] if record["programs"])
+    response_item = response_record["programs"][0]["tiers"][0]["groups"][0]["items"][0]
+    assert "discount_rate_pct" not in response_item
+    assert response_item["discount_terms"][0]["discount_rate_pct"] == 20
+
 def test_manifest_returns_launch_display_manifest(private_client):
     payload = _manifest_payload()
     with patch(
