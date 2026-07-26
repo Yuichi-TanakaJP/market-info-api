@@ -139,6 +139,43 @@ def test_latest_accepts_discount_metadata(private_client):
     assert "discount_rate_pct" not in response_item
     assert response_item["discount_terms"][0]["discount_rate_pct"] == 20
 
+def test_latest_accepts_long_term_metadata(private_client):
+    payload = _payload()
+    payload["counts"]["has_long_term_benefit"] = 1
+    payload["counts"]["requires_long_term_holding"] = 1
+    record = next(record for record in payload["records"] if record["programs"])
+    tier = record["programs"][0]["tiers"][0]
+    tier["required_holding_months"] = 12
+    record["has_long_term_benefit"] = True
+    record["requires_long_term_holding"] = True
+    record["long_term_required_holding_months"] = [12]
+    record["long_term_benefit_tiers"] = [
+        {
+            "program_id": record["programs"][0]["program_id"],
+            "program_label": record["programs"][0]["label"],
+            "minimum_shares": tier["minimum_shares"],
+            "maximum_shares": tier.get("maximum_shares"),
+            "required_holding_months": 12,
+            "groups": tier["groups"],
+        }
+    ]
+    with patch(
+        "app.routers.yutai_launch_display.cache.get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        response = private_client.get(
+            "/yutai/launch-display/latest",
+            headers={"Authorization": "Bearer test-server-secret"},
+        )
+
+    assert response.status_code == 200
+    response_record = next(record for record in response.json()["records"] if record["programs"])
+    assert response.json()["counts"]["has_long_term_benefit"] == 1
+    assert response_record["has_long_term_benefit"] is True
+    assert response_record["requires_long_term_holding"] is True
+    assert response_record["long_term_required_holding_months"] == [12]
+    assert response_record["long_term_benefit_tiers"][0]["groups"]
+
 def test_manifest_returns_launch_display_manifest(private_client):
     payload = _manifest_payload()
     with patch(
