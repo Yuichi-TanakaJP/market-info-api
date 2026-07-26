@@ -90,6 +90,22 @@ def test_latest_returns_real_artifact_shape(private_client):
     get_manifest.assert_awaited_once()
 
 
+def test_latest_accepts_crossable_with_caution_watch_state(private_client):
+    payload = _payload()
+    payload["counts_by_nikko_watch_state"]["crossable_with_caution"] = 1
+    payload["records"][0]["nikko_watch_state"] = "crossable_with_caution"
+    with patch(
+        "app.routers.yutai_launch_display.cache.get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        response = private_client.get(
+            "/yutai/launch-display/latest",
+            headers={"Authorization": "Bearer test-server-secret"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["records"][0]["nikko_watch_state"] == "crossable_with_caution"
+
 def test_manifest_returns_launch_display_manifest(private_client):
     payload = _manifest_payload()
     with patch(
@@ -170,3 +186,4 @@ def test_latest_distinguishes_missing_object_from_missing_bucket(
 
     assert response.status_code == expected_status
     assert response.headers["cache-control"] == "private, no-store"
+

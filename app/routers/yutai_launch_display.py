@@ -32,6 +32,7 @@ class YutaiLaunchDisplayWatchStateCounts(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     crossable: int = Field(ge=0)
+    crossable_with_caution: int = Field(default=0, ge=0)
     temporarily_blocked_by_sell_regulation: int = Field(ge=0)
     watch_inventory_listed: int = Field(ge=0)
 
@@ -108,6 +109,7 @@ class YutaiLaunchDisplayRecord(BaseModel):
     official_benefit_url: str | None = None
     nikko_watch_state: Literal[
         "crossable",
+        "crossable_with_caution",
         "temporarily_blocked_by_sell_regulation",
         "watch_inventory_listed",
     ]
@@ -257,3 +259,5 @@ async def get_monthly(year_month: str, response: Response) -> dict:
         f"yutai-launch-display/monthly/{year_month}",
         f"{_PREFIX}/{year_month}.json",
     )
+
+
