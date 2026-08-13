@@ -237,6 +237,9 @@ R2 更新時の扱い:
       "month": "YYYY-MM",
       "path": "YYYY-MM.json",
       "count": 288,
+      "candidate_record_count": 292,
+      "unverified_candidate_count": 9,
+      "verification_mode": "verified_only",
       "conditions_available": 42,
       "auto_calculable": 33,
       "requires_user_valuation": 9
@@ -244,6 +247,22 @@ R2 更新時の扱い:
   ]
 }
 ```
+
+`candidate_record_count`、`unverified_candidate_count`、`verification_mode` は、候補artifactとの対応関係を示すpublish metadataである。旧artifactでは省略されることがある。
+
+月次payloadには、次のpublish metadataが含まれる場合がある。
+
+```json
+{
+  "artifact_type": "yutai_launch_display",
+  "verification_mode": "verified_only",
+  "source_artifact_type": "minkabu_candidate",
+  "candidate_record_count": 292,
+  "unverified_candidate_count": 9
+}
+```
+
+`programs[]` の `effective_from` / `effective_to` は、年度移行などで制度の適用期間を限定するための任意フィールドである。
 
 `/yutai/launch-display/latest` は `yutai/launch-display/latest.json`、`/yutai/launch-display/monthly/{year_month}` は `yutai/launch-display/{year_month}.json` を読む。
 
