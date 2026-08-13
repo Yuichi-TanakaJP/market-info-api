@@ -57,6 +57,9 @@ def _manifest_payload() -> dict:
                 "month": "2026-09",
                 "path": "2026-09.json",
                 "count": 288,
+                "candidate_record_count": 292,
+                "unverified_candidate_count": 9,
+                "verification_mode": "verified_only",
                 "conditions_available": 42,
                 "auto_calculable": 33,
                 "requires_user_valuation": 9,
@@ -176,6 +179,34 @@ def test_latest_accepts_long_term_metadata(private_client):
     assert response_record["long_term_required_holding_months"] == [12]
     assert response_record["long_term_benefit_tiers"][0]["groups"]
 
+
+def test_latest_accepts_publish_metadata_and_program_effective_dates(private_client):
+    payload = _payload()
+    payload["artifact_type"] = "yutai_launch_display"
+    payload["verification_mode"] = "verified_only"
+    payload["source_artifact_type"] = "minkabu_candidate"
+    payload["candidate_record_count"] = 292
+    payload["unverified_candidate_count"] = 9
+    record = next(record for record in payload["records"] if record["programs"])
+    record["programs"][0]["effective_from"] = "2026-07-30"
+    record["programs"][0]["effective_to"] = None
+
+    with patch(
+        "app.routers.yutai_launch_display.cache.get_manifest",
+        new=AsyncMock(return_value=payload),
+    ):
+        response = private_client.get(
+            "/yutai/launch-display/latest",
+            headers={"Authorization": "Bearer test-server-secret"},
+        )
+
+    assert response.status_code == 200
+    response_payload = response.json()
+    assert response_payload["artifact_type"] == "yutai_launch_display"
+    assert response_payload["candidate_record_count"] == 292
+    response_record = next(record for record in response_payload["records"] if record["programs"])
+    assert response_record["programs"][0]["effective_from"] == "2026-07-30"
+
 def test_manifest_returns_launch_display_manifest(private_client):
     payload = _manifest_payload()
     with patch(
@@ -256,4 +287,3 @@ def test_latest_distinguishes_missing_object_from_missing_bucket(
 
     assert response.status_code == expected_status
     assert response.headers["cache-control"] == "private, no-store"
-

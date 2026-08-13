@@ -213,8 +213,13 @@ Authorization: Bearer <YUTAI_STOCK_PRICES_API_KEY>
 ```json
 {
   "schema_version": 1,
+  "artifact_type": "yutai_launch_display",
+  "verification_mode": "verified_only",
+  "source_artifact_type": "minkabu_candidate",
   "month": "2026-09",
   "record_count": 288,
+  "candidate_record_count": 292,
+  "unverified_candidate_count": 9,
   "counts": {
     "total": 288,
     "conditions_available": 42,
@@ -233,7 +238,16 @@ Authorization: Bearer <YUTAI_STOCK_PRICES_API_KEY>
       "nikko_available_shares": 600,
       "display_status": "conditions_available",
       "calculation_status": "auto_calculable",
-      "programs": []
+      "programs": [
+        {
+          "program_id": "quo-card",
+          "label": "QUOカード",
+          "rights_months": [9],
+          "effective_from": "2026-07-30",
+          "effective_to": null,
+          "tiers": []
+        }
+      ]
     }
   ]
 }

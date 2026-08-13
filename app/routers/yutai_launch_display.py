@@ -108,6 +108,10 @@ class YutaiLaunchDisplayProgram(BaseModel):
     program_id: str
     label: str
     rights_months: list[int]
+    # 年度移行などで同一の優待月に複数制度が存在する場合の適用期間。
+    # 旧artifactには存在しないため、後方互換のため任意とする。
+    effective_from: str | None = None
+    effective_to: str | None = None
     tiers: list[YutaiLaunchDisplayTier]
     notes: str | None = None
 
@@ -166,6 +170,12 @@ class YutaiLaunchDisplayLatest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal[1]
+    # publish側のartifact metadata。旧artifactには存在しないため任意とする。
+    artifact_type: Literal["yutai_launch_display"] | None = None
+    verification_mode: Literal["verified_only", "candidate_plus_verified"] | None = None
+    source_artifact_type: Literal["minkabu_candidate"] | None = None
+    candidate_record_count: int | None = Field(default=None, ge=0)
+    unverified_candidate_count: int | None = Field(default=None, ge=0)
     month: str
     record_count: int = Field(ge=0)
     counts: YutaiLaunchDisplayCounts
@@ -183,6 +193,9 @@ class YutaiLaunchDisplayManifestMonth(BaseModel):
     month: str
     path: str
     count: int = Field(ge=0)
+    candidate_record_count: int | None = Field(default=None, ge=0)
+    unverified_candidate_count: int | None = Field(default=None, ge=0)
+    verification_mode: Literal["verified_only", "candidate_plus_verified"] | None = None
     conditions_available: int = Field(ge=0)
     auto_calculable: int = Field(ge=0)
     requires_user_valuation: int = Field(ge=0)
@@ -290,5 +303,4 @@ async def get_monthly(year_month: str, response: Response) -> dict:
         f"yutai-launch-display/monthly/{year_month}",
         f"{_PREFIX}/{year_month}.json",
     )
-
 
