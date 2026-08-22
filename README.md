@@ -74,11 +74,31 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 ## 起動方法
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\python -m pip install -r requirements-dev.lock
+# macOS / Linux
+# .venv/bin/python -m pip install -r requirements-dev.lock
 uvicorn app.main:app --reload
 ```
 
 起動後、`http://localhost:8000/docs` で OpenAPI UI が確認できる。
+
+### 依存関係の更新
+
+`pyproject.toml` が直接依存関係の入力、`requirements.lock` がLinux本番実行用、
+`requirements-dev.lock` が開発・CI用の固定結果です。`requirements.lock` はCloud Runと同じ
+Python 3.11/Linux環境で更新し、`requirements-dev.lock` はWindowsでも更新できます。
+更新後はテストして2つのlockファイルをコミットします。Cloud Runで使うLinux専用依存
+（uvloop）の行は、Windows上で更新した場合も削除しないでください。
+
+```bash
+python -m pip install -r requirements-dev.lock
+python -m piptools compile --strip-extras pyproject.toml --output-file requirements.lock
+python -m piptools compile --strip-extras --extra dev pyproject.toml --output-file requirements-dev.lock
+```
+
+ベースイメージの更新時は、`Dockerfile` のPythonイメージダイジェストも同じ変更で更新します。
 
 ---
 
