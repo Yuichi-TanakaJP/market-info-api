@@ -19,20 +19,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Regenerate Linux Python 3.11 lock files
-        run: |
-          python -m pip install pip-tools
-          python -m piptools compile --strip-extras pyproject.toml --output-file requirements.lock
-          python -m piptools compile --strip-extras --extra dev pyproject.toml --output-file requirements-dev.lock
-
-      - name: Upload regenerated lock files
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-python311-locks
-          path: |
-            requirements.lock
-            requirements-dev.lock
-
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.lock
 
