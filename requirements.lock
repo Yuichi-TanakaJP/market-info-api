@@ -79,6 +79,8 @@ typing-inspection==0.4.4
     #   pydantic
 urllib3==2.7.0
     # via botocore
+uvloop==0.22.1
+    # via uvicorn (Linux/Cloud Run)
 uvicorn==0.52.4
     # via market-info-api (pyproject.toml)
 watchfiles==1.2.0
