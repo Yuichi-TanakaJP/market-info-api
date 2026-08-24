@@ -297,6 +297,28 @@ R2 更新時の扱い:
 `dividend_per_share` は `market_info` 側で `price×yield/100` から逆算した推定値。
 確定配当金としては扱わない。
 
+### /references
+
+`/references` はテーマ性と業界特性の参照 artifact を返す。公開 endpoint は 5 本だけで、GPT Actions では必要な operation のみ allowlist する。
+
+| Endpoint | 説明 | HTTP Cache-Control |
+|---|---|---|
+| `/references/policy-themes/manifest` | 現行 generation の manifest | `public, max-age=300` |
+| `/references/policy-themes` | 政策テーマの compact index | `public, max-age=300` |
+| `/references/policy-themes/{field_id}` | 政策テーマ1件の詳細 | `public, max-age=300` |
+| `/references/industries` | 業界分析の compact index | `public, max-age=300` |
+| `/references/industries/{industry_id}` | 業界分析1件の詳細 | `public, max-age=300` |
+
+`manifest` には `generation_id` と `object_root` が入る。`object_root` は `generations/{generation_id}` で、index/detail はこの root 配下の object を読む。
+`market_info` 側で手動 publish された generation が更新点で、`market-info-api` は generation を作らない。
+
+`policy-themes` / `industries` の list は `cursor` と `limit` でページングする。`cursor` は前回レスポンスの `next_cursor` を渡し、無効な cursor は 422。
+`field_id` は 1〜17、`industry_id` は 1〜13。範囲外は 422。
+detail が current generation に存在しない場合は 404、R2 取得失敗や形状不一致は 502。
+
+manifest は 6h の server cache、policy / industry の index と detail は generation-scoped key で 24h の内部 cache で扱う。HTTP 上の public cache-control は短い mutable cache（`max-age=300`）とする。
+serialized payload の運用目安は 40k 未満を通常、50k 以上で warning、60k 以上で failure。
+
 ### market-rankings の manifest
 
 ```json
@@ -498,7 +520,7 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 | 種別 | 定義 | TTL | 導出根拠 |
 |---|---|---|---|
 | **可変データ**（latest / manifest） | 次回 publish で上書きされる | **6時間** | 最短更新間隔 24時間 × 1/4。1更新サイクルで最低 4 回は新鮮なデータを取得できる |
-| **不変データ**（過去日次・月次） | publish 後に内容が変わらない | **24時間** | immutable なので Cloud Run インスタンス稼働中は再取得不要 |
+| **不変データ**（過去日次・月次・generation index / detail） | publish 後に内容が変わらない | **24時間** | immutable なので Cloud Run インスタンス稼働中は再取得不要 |
 
 > この TTL 設計は market_info の publish スケジュールに依存する。**最短更新間隔が 24時間未満に変わった場合は TTL を合わせて見直すこと**。設計ルールの正本は `market_info/docs/reference/policy_decision_rules.md` を参照。
 

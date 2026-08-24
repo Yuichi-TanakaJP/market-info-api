@@ -77,6 +77,26 @@ GET /health
 → {"status": "ok"}
 ```
 
+### テーマ参照
+
+`/references` はテーマ性と業界特性の参照用 API。OpenAPI `/docs` を正とし、GPT Actions では必要な 5 operation だけを allowlist する。
+
+```bash
+curl https://market-info-api-619599800912.asia-northeast1.run.app/references/policy-themes/manifest
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/references/policy-themes?limit=10"
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/references/policy-themes/1"
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/references/industries?limit=10"
+curl "https://market-info-api-619599800912.asia-northeast1.run.app/references/industries/1"
+```
+
+- `policy-themes` の `limit` は 1〜17、`cursor` は前回レスポンスの `next_cursor`。
+- `industries` の `limit` は 1〜13、`cursor` は同じ扱い。
+- 無効な `cursor` や範囲外の path parameter は 422。
+- current generation に object がない detail は 404。
+- R2 取得失敗や response shape mismatch は 502。
+- manifest は 6 時間の server cache、policy / industry の index と detail は generation-scoped key で 24 時間の内部 cache で扱う。HTTP cache-control は短い mutable（`max-age=300`）で、新しい generation は producer 側の publish 後に見える。
+- serialized payload の運用目安は 40k 未満を通常、50k 以上で warning、60k 以上で failure。
+
 ### 株式ランキング
 
 ```
