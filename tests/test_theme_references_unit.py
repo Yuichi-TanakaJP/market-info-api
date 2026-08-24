@@ -9,10 +9,6 @@ import warnings
 import pytest
 from fastapi.testclient import TestClient
 
-from app import cache
-from app.routers import theme_references as router
-import app.main as main_mod
-
 
 _FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -22,7 +18,28 @@ def _fixture(name: str) -> dict:
 
 
 @pytest.fixture()
-def client():
+def theme_router(monkeypatch):
+    monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.com")
+
+    import importlib
+
+    import app.config as config_mod
+    import app.r2 as r2_mod
+    import app.routers.theme_references as theme_references_mod
+
+    importlib.reload(config_mod)
+    importlib.reload(r2_mod)
+    importlib.reload(theme_references_mod)
+    return theme_references_mod
+
+
+@pytest.fixture()
+def client(theme_router):
+    import importlib
+
+    import app.main as main_mod
+
+    importlib.reload(main_mod)
     with TestClient(main_mod.app) as test_client:
         yield test_client
 
@@ -60,6 +77,8 @@ def _r2_payloads(payloads: dict[str, dict]) -> dict[str, dict]:
 def test_all_endpoints_validate_real_shapes_and_use_generation_scoped_paths(
     client: TestClient, real_shape_payloads: dict[str, dict]
 ):
+    from app import cache
+
     payloads = _r2_payloads(real_shape_payloads)
     manifest_keys: list[str] = []
     day_keys: list[str] = []
@@ -313,16 +332,18 @@ def test_industry_detail_uses_stable_id_not_source_order_for_identity(
     assert response.json()["source_order"] == 2
 
 
-def test_response_size_thresholds_warn_and_reject_at_sixty_thousand_characters():
+def test_response_size_thresholds_warn_and_reject_at_sixty_thousand_characters(
+    theme_router,
+):
     normal = {"value": "normal"}
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        assert router._enforce_payload_size(normal) is normal
+        assert theme_router._enforce_payload_size(normal) is normal
     assert not caught
 
     warning_payload = {"value": "x" * 50_000}
     with pytest.warns(UserWarning, match="50000"):
-        assert router._enforce_payload_size(warning_payload) is warning_payload
+        assert theme_router._enforce_payload_size(warning_payload) is warning_payload
 
     empty_payload_size = len(
         json.dumps({"value": ""}, ensure_ascii=False, separators=(",", ":"))
@@ -332,7 +353,7 @@ def test_response_size_thresholds_warn_and_reject_at_sixty_thousand_characters()
         len(json.dumps(at_limit, ensure_ascii=False, separators=(",", ":"))) == 60_000
     )
     with pytest.raises(RuntimeError, match="60000"):
-        router._enforce_payload_size(at_limit)
+        theme_router._enforce_payload_size(at_limit)
 
 
 def test_theme_reference_openapi_operation_ids_are_unique(client: TestClient):
