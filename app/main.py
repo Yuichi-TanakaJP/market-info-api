@@ -18,6 +18,7 @@ from app.routers import (
     sbi,
     stock_master,
     tdnet,
+    theme_references,
     topix33,
     us_ranking,
     yutai,
@@ -106,3 +107,4 @@ app.include_router(econ_calendar.router)
 app.include_router(tdnet.router)
 app.include_router(disclosure_events.router)
 app.include_router(investor_flow.router)
+app.include_router(theme_references.router)

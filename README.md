@@ -69,6 +69,21 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /econ-calendar/weekly` | 今週の経済指標カレンダー |
 | `GET /econ-calendar/weekly/meta` | 経済指標カレンダー更新メタ情報 |
 
+### /references
+
+テーマ性と業界特性の参照用 artifact。詳細は `/docs` を一次情報源とする。
+GPT Actions では、必要な operation だけを allowlist して使う。
+
+| エンドポイント | 概要 |
+|----------------|------|
+| `GET /references/policy-themes/manifest` | 現行 generation の manifest |
+| `GET /references/policy-themes` | 政策テーマ一覧（cursor / limit 対応） |
+| `GET /references/policy-themes/{field_id}` | 政策テーマ1件の詳細 |
+| `GET /references/industries` | 業界分析一覧（cursor / limit 対応） |
+| `GET /references/industries/{industry_id}` | 業界分析1件の詳細 |
+
+HTTP cache-control は短い mutable（`max-age=300`）で、`/references` の policy / industry index と detail は current generation 参照。
+
 ---
 
 ## 起動方法
@@ -147,6 +162,11 @@ curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
   http://localhost:8000/yutai/launch-display/latest
 curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
   http://localhost:8000/yutai/stock-prices/latest
+curl http://localhost:8000/references/policy-themes/manifest
+curl "http://localhost:8000/references/policy-themes?limit=10"
+curl "http://localhost:8000/references/policy-themes/1"
+curl "http://localhost:8000/references/industries?limit=10"
+curl "http://localhost:8000/references/industries/1"
 ```
 
 `YUTAI_STOCK_PRICES_API_KEY` と R2 credentials はサーバーだけに設定する。mini-tools の
@@ -158,8 +178,10 @@ curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
 
 | 種別 | TTL |
 |------|-----|
-| 可変データ（latest / manifest 系） | 6 時間 |
-| 不変データ（過去日次・月次） | 24 時間 |
+| 可変データ（latest / manifest） | 6 時間 |
+| 不変データ（過去日次・月次・generation index / detail） | 24 時間 |
 
 インプロセスキャッシュのため、デプロイ（再起動）でリセットされる。  
 TTL 設計ルールの詳細は [`docs/api-contract.md`](docs/api-contract.md) を参照。
+
+`/references` は manifest が 6 時間の server cache、generation index / detail が 24 時間の内部 cache、公開 HTTP は `max-age=300`。
