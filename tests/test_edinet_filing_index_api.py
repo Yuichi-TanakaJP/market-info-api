@@ -64,7 +64,8 @@ def test_filing_index_manifest_returns_digest_entries(client):
     data = resp.json()
     assert data["latest"] == "2026-09-20"
     assert data["entries"][0]["item_count"] == 1
-    assert len(data["entries"][0]["sha256"]) == 64
+    assert len(data["entries"][0]["content_sha256"]) == 64
+    assert len(data["entries"][0]["artifact_sha256"]) == 64
 
 
 def test_filing_index_dated_uses_mutable_cache_class(client):
