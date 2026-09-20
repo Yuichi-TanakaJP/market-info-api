@@ -89,7 +89,8 @@ class EdinetFilingIndexManifestEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     date: str
-    sha256: str
+    content_sha256: str
+    artifact_sha256: str
     item_count: int
     source_process_datetime: str | None
 
