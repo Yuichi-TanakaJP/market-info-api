@@ -644,6 +644,74 @@ GET /edinet/document-list/{date}    # date: YYYY-MM-DD
 → （same shape as /edinet/document-list/latest）
 ```
 
+### EDINET Filing Index v2
+
+書類ブラウザ用の compact `document-list` とは別に、提出者・発行会社・対象会社・
+親書類・取下げ/修正/開示状態まで保持する downstream handoff。
+
+```
+GET /edinet/filing-index/v2/latest
+GET /edinet/filing-index/v2/{date}    # date: YYYY-MM-DD
+→ {
+    "schema_version": "edinet-filing-index-v2",
+    "as_of_date": "2026-09-20",
+    "generated_at": "2026-09-20T06:32:00Z",
+    "source_process_datetime": "2026-09-20 15:31",
+    "total_count": 1,
+    "items": [
+      {
+        "source_seq_number": 7,
+        "doc_id": "S100TEST",
+        "edinet_code": "E10001",
+        "sec_code": "12340",
+        "jcn": "6000012010023",
+        "filer_name": "テスト提出者株式会社",
+        "fund_code": null,
+        "ordinance_code": "010",
+        "form_code": "030000",
+        "doc_type_code": "350",
+        "period_start": null,
+        "period_end": null,
+        "submit_datetime": "2026-09-20 15:30",
+        "doc_description": "大量保有報告書",
+        "issuer_edinet_code": "E20002",
+        "subject_edinet_code": null,
+        "subsidiary_edinet_code": null,
+        "current_report_reason": null,
+        "parent_doc_id": null,
+        "operation_datetime": null,
+        "withdrawal_status": "0",
+        "doc_info_edit_status": "0",
+        "disclosure_status": "0",
+        "has_xbrl": true,
+        "has_pdf": true,
+        "has_attachment": false,
+        "has_english_document": false,
+        "has_csv": false,
+        "legal_status": "1"
+      }
+    ]
+  }
+
+GET /edinet/filing-index/v2/manifest
+→ {
+    "schema_version": "edinet-filing-index-manifest-v2",
+    "generated_at": "2026-09-20T06:33:00Z",
+    "latest": "2026-09-20",
+    "entries": [
+      {
+        "date": "2026-09-20",
+        "sha256": "...",
+        "item_count": 1,
+        "source_process_datetime": "2026-09-20 15:31"
+      }
+    ]
+  }
+```
+
+Filing Index v2 は過去日もEDINET側の取下げ・情報修正等で更新され得るため、
+日付指定も6時間の可変cache。manifestの同一日付 `sha256` 変化をsource revisionとして扱う。
+
 ### TDNET 全適時開示一覧
 
 ```
@@ -778,7 +846,8 @@ GET /market-calendar/us-closed
 | 種別 | TTL | 対象の例 |
 |------|-----|---------|
 | manifest / latest 系 | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
-| 日次・月次データ | 24時間 | `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
+| EDINET Filing Index v2 | 6時間 | `/edinet/filing-index/v2/{date}` を含む |
+| 不変の日次・月次データ | 24時間 | その他の `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
 
 ## 関連環境変数
 
@@ -828,6 +897,8 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/
 curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/analysis/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/investor-flow/analysis/manifest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/document-list/latest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/filing-index/v2/manifest
+curl https://market-info-api-619599800912.asia-northeast1.run.app/edinet/filing-index/v2/latest
 curl https://market-info-api-619599800912.asia-northeast1.run.app/tdnet/disclosures/latest
 ```
 
