@@ -710,7 +710,7 @@ GET /edinet/filing-index/v2/manifest
 ```
 
 Filing Index v2 は過去日もEDINET側の取下げ・情報修正等で更新され得るため、
-日付指定も6時間の可変cache。manifestの同一日付 `sha256` 変化をsource revisionとして扱う。
+日付指定も6時間の可変cache。manifestの同一日付 `content_sha256` 変化をsource revisionとして扱い、`artifact_sha256` は実ファイル整合性に使う。
 
 ### TDNET 全適時開示一覧
 
