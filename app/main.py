@@ -18,6 +18,7 @@ from app.routers import (
     sbi,
     stock_master,
     tdnet,
+    tdnet_router_events,
     theme_references,
     topix33,
     us_ranking,
@@ -79,6 +80,8 @@ app = FastAPI(
         "| `/edinet/document-list/{date}` | 1日1回 | 不変（24時間） |\n"
         "| `/tdnet/disclosures/latest` | 平日 1日1回 | 可変（6時間） |\n"
         "| `/tdnet/disclosures/{date}` | 1日1回 | 不変（24時間） |\n"
+        "| `/tdnet/router-events/latest`, `/manifest` | TDNET日次バッチ後 | 可変（6時間） |\n"
+        "| `/tdnet/router-events/{date}` | TDNET日次バッチ後 | 不変（24時間） |\n"
         "| `/disclosure-events/latest`, `/manifest` | 平日 1日1回 | 可変（6時間） |\n"
         "| `/disclosure-events/{date}` | 1日1回 | 不変（24時間） |\n\n"
         "> **ポーリングはデータの更新頻度に基づいて決定すること**（キャッシュ TTL ではなく）。"
@@ -105,6 +108,7 @@ app.include_router(us_ranking.router)
 app.include_router(edinet.router)
 app.include_router(econ_calendar.router)
 app.include_router(tdnet.router)
+app.include_router(tdnet_router_events.router)
 app.include_router(disclosure_events.router)
 app.include_router(investor_flow.router)
 app.include_router(theme_references.router)
