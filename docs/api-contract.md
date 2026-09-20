@@ -54,7 +54,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 
 `{date}` を受け付けるエンドポイントは全て **YYYY-MM-DD** 形式。  
 基本的に API 側はフォーマット検証を行わず、不正な形式の場合は R2 の 404 として扱われる。  
-**例外**: `/edinet/document-list/{date}` は API 側で形式を検証し、不正な場合は 422 を返す。  
+**例外**: `/edinet/document-list/{date}` と `/edinet/filing-index/v2/{date}` は API 側で形式を検証し、不正な場合は 422 を返す。  
 クライアント側でバリデーションすること。
 
 ### year_month パラメータの形式
@@ -81,6 +81,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/earnings-calendar/domestic/*` | 不定期 | 決算データ更新時 |
 | `/earnings-calendar/overseas/*` | 不定期 | 決算データ更新時 |
 | `/edinet/document-list/*` | 平日 1日1回 | 週末・祝日は件数 0 の場合あり |
+| `/edinet/filing-index/v2/*` | market_info publish時 | 過去日も取下げ・書類情報修正・開示状態変更で再publishされ得る。datedも6時間の可変cache |
 | `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
@@ -101,6 +102,31 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 `manifest` を持つエンドポイントは、利用可能な日付・月の一覧を返す。  
 mini-tools はこの一覧を参照してから日次・月次データをリクエストすること。  
 manifest に含まれない日付・月をリクエストした場合、404 が返る。
+
+### EDINET Filing Index v2 の manifest / cache
+
+`/edinet/filing-index/v2/manifest` は各 source date の digest と件数を返す。
+
+```json
+{
+  "schema_version": "edinet-filing-index-manifest-v2",
+  "generated_at": "2026-09-20T06:33:00Z",
+  "latest": "2026-09-20",
+  "entries": [
+    {
+      "date": "2026-09-20",
+      "sha256": "...",
+      "item_count": 1,
+      "source_process_datetime": "2026-09-20 15:31"
+    }
+  ]
+}
+```
+
+EDINET は取下げ、書類情報修正、開示・不開示状態変更により同じ source date が後から更新され得る。
+そのため Filing Index v2 は日付指定 endpoint も immutable 24時間cacheには置かず、
+`latest` / `manifest` と同じ可変6時間cacheを使用する。downstream は同一日付の
+`sha256` 変更を正式な source revision として扱う。
 
 ### ranking / topix33 / nikkei の manifest
 
