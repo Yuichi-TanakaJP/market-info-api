@@ -47,6 +47,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /yutai/launch-display/monthly/{year_month}` | 指定月の優待ローンチ表示用データ（Bearer 認証必須・Private R2） |
 | `GET /yutai/stock-prices/latest` | 優待向け最新株価（Bearer 認証必須・Private R2） |
 | `GET /stock-master/latest` | 銘柄マスター（最新） |
+| `GET /reference/jpx-listed-companies/latest` | JPX上場銘柄の正規化済み最新スナップショット |
+| `GET /reference/jpx-listed-companies/manifest` | JPX上場銘柄スナップショットmanifest |
+| `GET /reference/jpx-listed-companies/{date}` | 指定基準日のJPX上場銘柄正規化スナップショット |
 | `GET /us-ranking/manifest` | 米国株ランキング manifest |
 | `GET /us-ranking/{date}` | 指定日の米国株ランキング JSON |
 | `GET /market-rankings/market-cap/manifest` | 時価総額ランキング manifest |
