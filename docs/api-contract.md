@@ -115,7 +115,8 @@ manifest に含まれない日付・月をリクエストした場合、404 が�
   "entries": [
     {
       "date": "2026-09-20",
-      "sha256": "...",
+      "content_sha256": "...",
+      "artifact_sha256": "...",
       "item_count": 1,
       "source_process_datetime": "2026-09-20 15:31"
     }
@@ -126,7 +127,7 @@ manifest に含まれない日付・月をリクエストした場合、404 が�
 EDINET は取下げ、書類情報修正、開示・不開示状態変更により同じ source date が後から更新され得る。
 そのため Filing Index v2 は日付指定 endpoint も immutable 24時間cacheには置かず、
 `latest` / `manifest` と同じ可変6時間cacheを使用する。downstream は同一日付の
-`sha256` 変更を正式な source revision として扱う。
+`content_sha256` 変更を正式な source revision として扱う。\n`artifact_sha256` は exact JSON bytes の整合性確認用。
 
 ### ranking / topix33 / nikkei の manifest
 
