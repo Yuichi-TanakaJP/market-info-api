@@ -9,6 +9,7 @@ from app.routers import (
     edinet,
     health,
     investor_flow,
+    jpx_listed_companies,
     market_calendar,
     market_rankings,
     nikkei,
@@ -75,6 +76,8 @@ app = FastAPI(
         "| `/yutai/launch-display/monthly/{year_month}` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/stock-prices/latest` | 日次 | 可変（6時間・private） |\n"
         "| `/stock-master/latest` | publish 時 | 可変（6時間） |\n"
+        "| `/reference/jpx-listed-companies/latest`, `/manifest` | 月次publish時 | 可変（6時間） |\n"
+        "| `/reference/jpx-listed-companies/{date}` | 月次publish時 | 不変（24時間） |\n"
         "| `/market-calendar/*` | 不定期（年次更新時） | 可変（6時間） |\n"
         "| `/edinet/document-list/latest` | 平日 1日1回 | 可変（6時間） |\n"
         "| `/edinet/document-list/{date}` | 1日1回 | 不変（24時間） |\n"
@@ -111,4 +114,5 @@ app.include_router(tdnet.router)
 app.include_router(tdnet_router_events.router)
 app.include_router(disclosure_events.router)
 app.include_router(investor_flow.router)
+app.include_router(jpx_listed_companies.router)
 app.include_router(theme_references.router)
