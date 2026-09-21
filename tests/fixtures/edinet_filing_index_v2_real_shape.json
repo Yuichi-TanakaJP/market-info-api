@@ -1,0 +1,40 @@
+{
+  "schema_version": "edinet-filing-index-v2",
+  "as_of_date": "2026-09-20",
+  "generated_at": "2026-09-20T06:32:00Z",
+  "source_process_datetime": "2026-09-20 15:31",
+  "total_count": 1,
+  "items": [
+    {
+      "source_seq_number": 7,
+      "doc_id": "S100TEST",
+      "edinet_code": "E10001",
+      "sec_code": "12340",
+      "jcn": "6000012010023",
+      "filer_name": "テスト提出者株式会社",
+      "fund_code": null,
+      "ordinance_code": "010",
+      "form_code": "030000",
+      "doc_type_code": "350",
+      "period_start": null,
+      "period_end": null,
+      "submit_datetime": "2026-09-20 15:30",
+      "doc_description": "大量保有報告書",
+      "issuer_edinet_code": "E20002",
+      "subject_edinet_code": null,
+      "subsidiary_edinet_code": null,
+      "current_report_reason": null,
+      "parent_doc_id": null,
+      "operation_datetime": null,
+      "withdrawal_status": "0",
+      "doc_info_edit_status": "0",
+      "disclosure_status": "0",
+      "has_xbrl": true,
+      "has_pdf": true,
+      "has_attachment": false,
+      "has_english_document": false,
+      "has_csv": false,
+      "legal_status": "1"
+    }
+  ]
+}

@@ -64,6 +64,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /investor-flow/analysis/weeks/{start_date}/{end_date}` | 指定週の投資主体別売買動向の分析サマリー |
 | `GET /edinet/document-list/latest` | EDINET 書類一覧（最新） |
 | `GET /edinet/document-list/{date}` | 指定日の EDINET 書類一覧 |
+| `GET /edinet/filing-index/v2/latest` | EDINET Filing Index v2（最新・完全metadata） |
+| `GET /edinet/filing-index/v2/manifest` | Filing Index v2 の日付・digest manifest |
+| `GET /edinet/filing-index/v2/{date}` | 指定日の Filing Index v2 |
 | `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
 | `GET /tdnet/disclosures/{date}` | 指定日の TDNET 全適時開示一覧 |
 | `GET /disclosure-events/latest` | 正規化済み開示イベント（最新） |
@@ -160,6 +163,8 @@ curl http://localhost:8000/market-calendar/jpx-closed
 curl http://localhost:8000/market-calendar/us-closed
 curl http://localhost:8000/investor-flow/latest
 curl http://localhost:8000/investor-flow/analysis/latest
+curl http://localhost:8000/edinet/filing-index/v2/manifest
+curl http://localhost:8000/edinet/filing-index/v2/latest
 curl http://localhost:8000/stock-master/latest
 curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
   http://localhost:8000/yutai/launch-display/latest
@@ -182,6 +187,7 @@ curl "http://localhost:8000/references/industries/1"
 | 種別 | TTL |
 |------|-----|
 | 可変データ（latest / manifest） | 6 時間 |
+| EDINET Filing Index v2（日付指定を含む） | 6 時間 |
 | 不変データ（過去日次・月次・generation index / detail） | 24 時間 |
 
 インプロセスキャッシュのため、デプロイ（再起動）でリセットされる。  
