@@ -701,7 +701,8 @@ GET /edinet/filing-index/v2/manifest
     "entries": [
       {
         "date": "2026-09-20",
-        "sha256": "...",
+        "content_sha256": "...",
+        "artifact_sha256": "...",
         "item_count": 1,
         "source_process_datetime": "2026-09-20 15:31"
       }
@@ -711,6 +712,70 @@ GET /edinet/filing-index/v2/manifest
 
 Filing Index v2 は過去日もEDINET側の取下げ・情報修正等で更新され得るため、
 日付指定も6時間の可変cache。manifestの同一日付 `content_sha256` 変化をsource revisionとして扱い、`artifact_sha256` は実ファイル整合性に使う。
+
+### EDINET Large Holding compact v1
+
+Stock Notes Ownership向けのprivacy-minimized handoff。
+
+```
+GET /edinet/large-holding/v1/latest
+GET /edinet/large-holding/v1/{date}
+→ {
+    "schema_version": "edinet-large-holding-compact-v1",
+    "source_date": "2026-09-20",
+    "filing_index_content_sha256": "...",
+    "item_count": 1,
+    "items": [
+      {
+        "doc_id": "S100TEST",
+        "filing_kind": "change_report",
+        "filer_security_code": "99990",
+        "issuer": {
+          "edinet_code": "E20002",
+          "security_code": "1234",
+          "name": "対象株式会社"
+        },
+        "report": {
+          "filing_requirement_date": "2026-09-18",
+          "filing_date": "2026-09-20",
+          "change_reason": "保有割合の変更"
+        },
+        "holders": [
+          {
+            "role": "filer",
+            "display_name": "提出者株式会社",
+            "holding_ratio_pct": 6.0,
+            "previous_holding_ratio_pct": 4.8,
+            "purpose_of_holding": "純投資"
+          }
+        ],
+        "aggregate": {
+          "holding_ratio_pct": 6.0,
+          "previous_holding_ratio_pct": 4.8
+        }
+      }
+    ]
+  }
+
+GET /edinet/large-holding/v1/manifest
+→ {
+    "schema_version": "edinet-large-holding-compact-manifest-v1",
+    "latest": "2026-09-20",
+    "entries": [
+      {
+        "date": "2026-09-20",
+        "content_sha256": "...",
+        "artifact_sha256": "...",
+        "item_count": 1,
+        "filing_index_content_sha256": "..."
+      }
+    ]
+  }
+```
+
+`filer_security_code` は提出者証券コードであり、対象会社のSecurity identityではない。
+対象会社は `issuer.security_code` / `issuer.edinet_code` を使う。
+Raw XBRL/PDF、住所/DOB/電話、60日売買・重要契約のraw TextBlockはcompact payloadに含めない。
 
 ### TDNET 全適時開示一覧
 
@@ -847,6 +912,7 @@ GET /market-calendar/us-closed
 |------|-----|---------|
 | manifest / latest 系 | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
 | EDINET Filing Index v2 | 6時間 | `/edinet/filing-index/v2/{date}` を含む |
+| EDINET Large Holding compact v1 | 6時間 | `/edinet/large-holding/v1/{date}` を含む |
 | 不変の日次・月次データ | 24時間 | その他の `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
 
 ## 関連環境変数
