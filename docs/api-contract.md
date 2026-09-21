@@ -82,6 +82,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/earnings-calendar/overseas/*` | 不定期 | 決算データ更新時 |
 | `/edinet/document-list/*` | 平日 1日1回 | 週末・祝日は件数 0 の場合あり |
 | `/edinet/filing-index/v2/*` | market_info publish時 | 過去日も取下げ・書類情報修正・開示状態変更で再publishされ得る。datedも6時間の可変cache |
+| `/edinet/large-holding/v1/*` | market_info compact publish時 | 大量保有compact。過去日も訂正・取下げ等で再publishされ得るためdatedも6時間の可変cache |
 | `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
@@ -128,6 +129,31 @@ EDINET は取下げ、書類情報修正、開示・不開示状態変更によ�
 そのため Filing Index v2 は日付指定 endpoint も immutable 24時間cacheには置かず、
 `latest` / `manifest` と同じ可変6時間cacheを使用する。downstream は同一日付の
 `content_sha256` 変更を正式な source revision として扱う。\n`artifact_sha256` は exact JSON bytes の整合性確認用。
+
+### EDINET Large Holding compact v1 の manifest / cache
+
+`/edinet/large-holding/v1/manifest` は各source dateのcompact semantic digestとexact artifact digestを返す。
+
+```json
+{
+  "schema_version": "edinet-large-holding-compact-manifest-v1",
+  "generated_at": "2026-09-21T00:01:00Z",
+  "latest": "2026-09-20",
+  "entries": [
+    {
+      "date": "2026-09-20",
+      "content_sha256": "...",
+      "artifact_sha256": "...",
+      "item_count": 1,
+      "filing_index_content_sha256": "..."
+    }
+  ]
+}
+```
+
+EDINET source dateは訂正・取下げ等で後日更新され得るため、
+日付指定endpointもimmutable 24時間cacheには置かず6時間のmutable cacheを使う。
+downstreamは `content_sha256` の変化をcompact semantic revisionとして扱う。
 
 ### ranking / topix33 / nikkei の manifest
 
