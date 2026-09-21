@@ -67,6 +67,9 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /edinet/filing-index/v2/latest` | EDINET Filing Index v2（最新・完全metadata） |
 | `GET /edinet/filing-index/v2/manifest` | Filing Index v2 の日付・digest manifest |
 | `GET /edinet/filing-index/v2/{date}` | 指定日の Filing Index v2 |
+| `GET /edinet/large-holding/v1/latest` | EDINET大量保有 compact v1（最新） |
+| `GET /edinet/large-holding/v1/manifest` | 大量保有 compact v1 の日付・digest manifest |
+| `GET /edinet/large-holding/v1/{date}` | 指定日の大量保有 compact v1 |
 | `GET /tdnet/disclosures/latest` | TDNET 全適時開示一覧（最新） |
 | `GET /tdnet/disclosures/{date}` | 指定日の TDNET 全適時開示一覧 |
 | `GET /disclosure-events/latest` | 正規化済み開示イベント（最新） |
@@ -165,6 +168,8 @@ curl http://localhost:8000/investor-flow/latest
 curl http://localhost:8000/investor-flow/analysis/latest
 curl http://localhost:8000/edinet/filing-index/v2/manifest
 curl http://localhost:8000/edinet/filing-index/v2/latest
+curl http://localhost:8000/edinet/large-holding/v1/manifest
+curl http://localhost:8000/edinet/large-holding/v1/latest
 curl http://localhost:8000/stock-master/latest
 curl -H "Authorization: Bearer $YUTAI_STOCK_PRICES_API_KEY" \
   http://localhost:8000/yutai/launch-display/latest
