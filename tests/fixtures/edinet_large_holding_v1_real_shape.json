@@ -1,0 +1,77 @@
+{
+  "schema_version": "edinet-large-holding-compact-v1",
+  "source_date": "2026-09-20",
+  "generated_at": "2026-09-21T00:00:00Z",
+  "filing_index_content_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "item_count": 1,
+  "items": [
+    {
+      "doc_id": "S100TEST",
+      "source_date": "2026-09-20",
+      "submit_datetime": "2026-09-20 10:30",
+      "filing_kind": "change_report",
+      "ordinance_code": "060",
+      "form_code": "010002",
+      "doc_type_code": "350",
+      "doc_description": "変更報告書",
+      "parent_doc_id": "S100PARENT",
+      "withdrawal_status": "0",
+      "doc_info_edit_status": "0",
+      "disclosure_status": "0",
+      "legal_status": "1",
+      "filer_edinet_code": "E10001",
+      "filer_security_code": "99990",
+      "report": {
+        "document_title": "変更報告書",
+        "filing_requirement_date": "2026-09-18",
+        "filing_date": "2026-09-20",
+        "arrangement": null,
+        "change_reason": "保有割合の変更"
+      },
+      "issuer": {
+        "edinet_code": "E20002",
+        "security_code": "1234",
+        "name": "対象株式会社"
+      },
+      "lineage": {
+        "filing_metadata_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_zip_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "parser_version": "edinet-large-holding-v1-poc",
+        "parser_output_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "holders": [
+        {
+          "role": "filer",
+          "member_index": 1,
+          "member_key": "FilerLargeVolumeHolder1Member",
+          "edinet_code": "E10001",
+          "party_type": "corporation",
+          "display_name": "提出者株式会社",
+          "base_date": "2026-09-18",
+          "total_stocks_etc_held": 1200000,
+          "residual_stocks_held": 0,
+          "total_outstanding_stocks_etc": 20000000,
+          "holding_ratio_pct": 6.0,
+          "previous_holding_ratio_pct": 4.8,
+          "purpose_of_holding": "純投資",
+          "important_proposal": null,
+          "amount_of_own_fund_jpy": 500000000,
+          "total_acquisition_funding_jpy": 600000000
+        }
+      ],
+      "aggregate": {
+        "base_date": "2026-09-18",
+        "total_stocks_etc_held": 1200000,
+        "total_outstanding_stocks_etc": 20000000,
+        "holding_ratio_pct": 6.0,
+        "previous_holding_ratio_pct": 4.8
+      },
+      "audit": {
+        "warning_count": 0,
+        "unknown_fact_count": 0,
+        "privacy_omitted_fact_count": 1,
+        "unmapped_context_count": 0
+      }
+    }
+  ]
+}
