@@ -1,0 +1,14 @@
+{
+  "schema_version": "edinet-large-holding-compact-manifest-v1",
+  "generated_at": "2026-09-21T00:01:00Z",
+  "latest": "2026-09-20",
+  "entries": [
+    {
+      "date": "2026-09-20",
+      "content_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "item_count": 1,
+      "filing_index_content_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ]
+}
