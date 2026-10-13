@@ -198,3 +198,7 @@ git branch -d feature/<topic>
 - main へのマージで GCP Cloud Run が自動デプロイされる
 - 設定変更（環境変数・スケール）は Cloud Run コンソールで行う
 - 詳細は [`docs/gcp-cloud-run-setup.md`](docs/gcp-cloud-run-setup.md) を参照
+
+## CI scope maintenance
+
+ファイルの追加・移動・用途変更時は [CI対象と更新手順](docs/ci-scope-policy.md) を確認する。新pathは自動除外せず、必要な場合だけ用途・参照を確認して同じPRでYAMLを更新する。変更範囲をローカル検証してまとめてpushし、同じheadのCI/レビューを無条件に再実行しない。

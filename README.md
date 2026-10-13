@@ -199,3 +199,7 @@ curl "http://localhost:8000/references/industries/1"
 TTL 設計ルールの詳細は [`docs/api-contract.md`](docs/api-contract.md) を参照。
 
 `/references` は manifest が 6 時間の server cache、generation index / detail が 24 時間の内部 cache、公開 HTTP は `max-age=300`。
+
+## CIの対象と更新
+
+[CI対象ファイルと更新手順](docs/ci-scope-policy.md)。新規ファイルの扱い、除外リストの更新担当、PR差分と古い実行のキャンセル、利用上限中の検証記録を説明しています。
