@@ -3,8 +3,19 @@ name: CI
 on:
   push:
     branches: [main]
+    # Only this reviewed documentation path is ignored; new paths run CI.
+    paths-ignore:
+      - 'README.md'
   pull_request:
     branches: [main]
+    # Only this reviewed documentation path is ignored; new paths run CI.
+    paths-ignore:
+      - 'README.md'
+
+# Keep only the latest PR validation; preserve independent main pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci:
