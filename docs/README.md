@@ -11,6 +11,7 @@ market-info-api のドキュメント置き場。
 
 | ファイル | 内容 |
 |----------|------|
+| [ci-scope-policy.md](ci-scope-policy.md) | CI対象・新規ファイル/用途変更時のルール更新・PR concurrency |
 | [api-contract.md](api-contract.md) | エラーコード・fallback 設計・TTL ルール・更新単位・manifest 形式・インシデント記録 |
 | [api-usage.md](api-usage.md) | エンドポイント別レスポンス例・curl コマンド集 |
 | [gcp-cloud-run-setup.md](gcp-cloud-run-setup.md) | GCP Cloud Run へのデプロイ手順（初期セットアップ・CI 連携） |
