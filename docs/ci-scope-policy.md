@@ -2,7 +2,7 @@
 
 決定日: 2026-10-13。設定の正本は `.github/workflows/` のYAML。本文はその運用手順です。
 
-## 現在の判定
+## 既存YAMLの自動trigger判定（2026-10-13）
 
 通常CIは、YAMLのpaths-ignoreに完全一致する説明専用ファイルだけの変更で起動を省きます。1件でも対象外のpathが混ざれば、既存の全検証を実行します。新規・未知のpathは既定で対象です。Markdown全体やdocs全体を除外しません。SQL・JSON・設定・コード・テスト・AGENTS/CLAUDE・本運用手順は既定で検証対象です。
 
@@ -28,3 +28,13 @@ CI利用上限中に開始前failureとなったものは、検証成功にも�
 ## テンプレートへの共通化
 
 共通化の計画正本は [repo-templates #22](https://github.com/Yuichi-TanakaJP/repo-templates/issues/22)。現在はrepoごとのYAMLを個別に維持します。テンプレートはコピー方式であり、自動同期は未実装。今後は共通ガードとrepo固有jobs/allowlistを分離し、差分をレビューできるPRで更新する予定です。Python/SQL/UIの選択実行やrequired-check互換方式は別の設計・検証として扱います。
+
+## 2026-10-18: local-first方針と既存自動triggerの区別
+
+Owner承認の現行方針は、リスク相応のローカル検証と必要な独立レビューをmerge判断の基準にすること。Actionsは任意・agentからのdispatch/re-runは既定で行わない。実際の強制branch ruleと明示例外は先に確認し、無断でbypassしない。
+
+このPRは既存workflowの自動push/PR triggerを変更しない。「Actions任意」はYAMLが自動的に手動専用へ変わったことを意味しない。上の2026-10-13のpath判定は、triggerが有効でskip指定がない場合の技術的な起動条件として残る。コード・設定・AGENTS/CLAUDE・未知pathの検証責任も残り、まずローカルでリスク相応に検証する。通常hosted実行をmergeの必須条件とする旧記述は、このowner決定で更新する。
+
+強制hosted checkがないことを確認し、今回のようにowner方針に沿って自動Actionsを省略する場合は、commit messageへ `[skip ci]` を付ける。強制checkや固有例外がある場合はskipせず、その条件を満たす。これは既存YAML・job・deploy/schedule/publish triggerを一括変更する権限ではない。
+
+push/PR後は実際のchecks/runsを確認する。自動runが起動した場合は、そのRUNNING/PASS/FAIL/CANCELLED等の実状態を記録し、NOT_RUNと書かない。NOT_RUNは本当に未実行の場合だけ。Vercel previewや自動Codex reviewはActionsと別に記録する。ローカル失敗・未解決指摘・必要証拠不足はHOLD。削除・本番deploy・公開・課金・mergeの承認は従来どおり。

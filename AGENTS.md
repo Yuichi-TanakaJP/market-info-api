@@ -211,3 +211,5 @@ git branch -d feature/<topic>
 - 意味のあるレビュー後修正だけ再レビューする。typo/comment/evidenceだけなら最終diff確認とする。PRにdepthと理由・実施結果を記録する。
 - ローカルのリスク相応の検証を主とし、Actionsは任意・既定スキップ。未実行やbilling停止はNOT_RUNでありPASSではない。それだけでmergeを止めないが、ローカル失敗・未解決指摘・必須証拠不足はHOLD。実際の強制branch ruleと明示のrepo例外を確認し、無断でbypassしない。
 - この方針は削除・本番deploy・公開・課金・mergeの承認を代替しない。既存の固有安全・データ・UAT条件は保持する。
+
+Actions任意の方針は既存YAMLの自動trigger変更を意味しない。agentからのdispatch/re-runは既定で行わず、自動実行を省略するときは強制check/例外がないことを確認して `[skip ci]` をcommitへ付ける。起動したrunは実状態を記録し、NOT_RUNとは書かない。詳細は上のCI方針参照先に従う。
