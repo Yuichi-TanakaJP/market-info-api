@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # CLAUDE.md
 
 このリポジトリの作業ルールは [`AGENTS.md`](./AGENTS.md) を正本とする。  

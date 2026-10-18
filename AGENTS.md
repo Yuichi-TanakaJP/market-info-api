@@ -52,7 +52,7 @@ git status --short
 | Tier | 変更例 | 必須確認 | AIレビュー / UAT |
 |---|---|---|---|
 | 0 非実行変更 | docs、コメント、文言、設定例 | diff、必要な構文・リンク確認 | 原則不要 |
-| 1 低リスク | 局所的な内部ロジック、機械的変更 | 対象lint・対象テスト | 挙動変更時のみ簡易確認 |
+| 1 低リスク | 局所的な内部ロジック、機械的変更 | 対象lint・対象テスト | 挙動変更は独立レビュー1回 |
 | 2 中リスク | API挙動、定期処理、外部入出力 | 対象lint・影響範囲テスト・必要なbuild | 独立レビュー1回、変更した挙動のUAT |
 | 3 高リスク | 認証、データ移行、公開、セキュリティ | 関連フルスイート、build、ロールバック確認 | 高強度レビュー、UAT/リリース確認必須 |
 
@@ -97,14 +97,13 @@ PR 本文に必ず記載する項目:
 ## 6. レビュー確認と対応
 
 ```bash
-# Tier 2以上は Codex CLI review を1回実施する
-codex review --base main
+# 動作変更は独立レビューを1回。model/profile/手段はagentが選ぶ
 gh pr view <PR番号> --comments
 ```
 
 - P1/P0 指摘は優先対応する。
 - 修正後は同じブランチで再コミットし push する。
-- レビュー後の修正が小さく局所的なら再レビューは不要。スコープ拡大、重要な挙動変更、高リスク領域への波及がある場合だけ再実行する。
+- レビュー後の意味のある挙動・scope変更は再レビューする。typo/comment/evidenceだけの修正は最終diff確認とする。
 
 ## 7. マージ
 
@@ -202,3 +201,13 @@ git branch -d feature/<topic>
 ## CI scope maintenance
 
 ファイルの追加・移動・用途変更時は [CI対象と更新手順](docs/ci-scope-policy.md) を確認する。新pathは自動除外せず、必要な場合だけ用途・参照を確認して同じPRでYAMLを更新する。変更範囲をローカル検証してまとめてpushし、同じheadのCI/レビューを無条件に再実行しない。
+
+## Review and verification defaults
+
+- **省略可**: 意味・動作・運用判断・契約・実行手順を変えないdocs/comment等。最終diffと関連syntax/link/outputを確認する。
+- **通常**: 動作を変えるcode/UI/API/config/schedule/external I/O。独立レビューを1回行う。
+- **重点**: auth/permission/secrets/billing/DB migration/production operation/広い影響。独立レビューに専門・security・rollback観点を含める。
+- model/profile/reasoning effortはagentがリスクと不確実性から選ぶ。レビューの起動失敗・quota・認証・model利用不能は完了ではなく、その失敗だけを理由にdepthを下げない。利用可能な別手段で必要な結果を満たす。変更内容の再評価でdepthを変える場合は理由を記録する。
+- 意味のあるレビュー後修正だけ再レビューする。typo/comment/evidenceだけなら最終diff確認とする。PRにdepthと理由・実施結果を記録する。
+- ローカルのリスク相応の検証を主とし、Actionsは任意・既定スキップ。未実行やbilling停止はNOT_RUNでありPASSではない。それだけでmergeを止めないが、ローカル失敗・未解決指摘・必須証拠不足はHOLD。実際の強制branch ruleと明示のrepo例外を確認し、無断でbypassしない。
+- この方針は削除・本番deploy・公開・課金・mergeの承認を代替しない。既存の固有安全・データ・UAT条件は保持する。
