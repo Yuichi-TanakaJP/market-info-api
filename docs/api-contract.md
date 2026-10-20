@@ -619,3 +619,15 @@ API-side cache、range/search endpoint、または新しい R2 publish artifact 
 | `WeakValueDictionary` | Lock が GC で回収される | 実装が複雑、このユースケースでは過剰 |
 
 key 数は「router 数 × 日付数」で上限が実質あるため、`defaultdict` で十分と判断。
+
+## Domestic market date provenance and immutable observations
+
+`/ranking`, `/nikkei`, `/topix33` retain old dated URLs and manifest keys. `date` / `dates` / `latest` / `latest_date` are save/lookup dates; they do not certify trading days. Optional typed `observation` contains acquisition UUID, source identity, nullable source `market_date`, explicit_source/unknown `date_basis`, nullable source timestamp and collection timestamp, representation generation timestamp and input SHA256.
+
+Manifest `snapshots[save_date]` contains `observation` and `snapshot_file` (snapshots/<sha256>.json). The latest save date's observation is also at the top level. `latest_market_observation` separately points to the greatest explicitly sourced market date, or null. Existing artifacts without metadata are accepted without inferring source dates or acquisition times.
+
+For dated reads, API resolves the current manifest reference and validates immutable content hash, observation identity and save date. Snapshot cache uses the immutable object key and `_DAY_TTL`. Legacy aliases use `_MANIFEST_TTL` because same-day publication can overwrite them. Manifest TTL remains `_MANIFEST_TTL`; automatic visibility can lag up to that 6-hour cache period. No user retry/confirmation is needed to certify dates, and a later acquisition never certifies older unknown data.
+
+Producer acquisition -> raw receipt -> normalized input -> JSON snapshot -> manifest -> API -> UI is the date responsibility chain. The API does not infer ranking or contribution dates from the independent index summary. Missing source-day metadata is UNKNOWN, never an API-generated proof of correctness.
+
+Rollback consumer/API then producer, preserving old aliases and all snapshots/receipts. No production backfill or object rewrite is part of these changes.

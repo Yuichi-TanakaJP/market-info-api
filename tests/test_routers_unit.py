@@ -85,7 +85,7 @@ def test_ranking_manifest(client):
 
 def test_ranking_day(client):
     day = {"date": "2026-03-28", "records": []}
-    with patch("app.routers.ranking.cache.get_day", new=AsyncMock(return_value=day)):
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.ranking.fetch_observation_day", new=AsyncMock(return_value=day)):
         resp = client.get("/ranking/2026-03-28")
     assert resp.status_code == 200
     assert resp.json()["date"] == "2026-03-28"
@@ -94,7 +94,7 @@ def test_ranking_day(client):
 def test_ranking_range_uses_manifest_dates_and_marks_latest(client):
     manifest = {"dates": ["2026-05-19", "2026-05-18", "2026-05-16"], "latest": "2026-05-19"}
 
-    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None):
         assert manifest_version_key == "2026-05-19"
         return {"date": source_date, "records": []}
 
@@ -154,7 +154,7 @@ def test_ranking_search_filters_compact_index(client):
         "generated_at": "2026-05-19T00:00:00Z",
     }
 
-    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None):
         assert manifest_version_key == "2026-05-19T00:00:00Z"
         return {
             "date": source_date,
@@ -208,7 +208,7 @@ def test_ranking_search_requires_period_or_from_to(client):
 def test_ranking_search_period_uses_manifest_latest(client):
     manifest = {"dates": ["2026-05-19", "2026-05-18"], "latest": "2026-05-19"}
 
-    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None):
         return {"date": source_date, "records": []}
 
     with (
@@ -271,7 +271,7 @@ def test_nikkei_day(client):
         "top_negative": [],
         "records": [],
     }
-    with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(return_value=day)):
+    with patch("app.routers.nikkei.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.nikkei.fetch_observation_day", new=AsyncMock(return_value=day)):
         resp = client.get("/nikkei/2026-03-28")
     assert resp.status_code == 200
     assert resp.json()["date"] == "2026-03-28"
@@ -280,7 +280,7 @@ def test_nikkei_day(client):
 def test_nikkei_range_uses_latest_date(client):
     manifest = {"dates": ["2026-05-19", "2026-05-16"], "latest_date": "2026-05-19"}
 
-    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None):
         return {
             "date": source_date,
             "index": "nikkei225",
@@ -508,7 +508,7 @@ def test_topix33_day(client):
         "top_negative": [],
         "sectors": [],
     }
-    with patch("app.routers.topix33.cache.get_day", new=AsyncMock(return_value=day)):
+    with patch("app.routers.topix33.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.topix33.fetch_observation_day", new=AsyncMock(return_value=day)):
         resp = client.get("/topix33/2026-04-01")
     assert resp.status_code == 200
     assert resp.json()["index"] == "topix33"
@@ -517,7 +517,7 @@ def test_topix33_day(client):
 def test_topix33_range(client):
     manifest = {"dates": ["2026-04-02", "2026-04-01"], "latest_date": "2026-04-02"}
 
-    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None):
+    async def fetch_day(source_date: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None):
         return {
             "date": source_date,
             "index": "topix33",
@@ -599,7 +599,7 @@ def _make_http_error(url: str, status: int) -> httpx.HTTPStatusError:
 
 def test_ranking_day_not_found(client):
     err = _make_http_error("https://r2.example.com/stock-ranking/20260228.json", 404)
-    with patch("app.routers.ranking.cache.get_day", new=AsyncMock(side_effect=err)):
+    with patch("app.routers.ranking.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.ranking.fetch_observation_day", new=AsyncMock(side_effect=err)):
         resp = client.get("/ranking/2026-02-28")
     assert resp.status_code == 404
     assert "2026-02-28" in resp.json()["detail"]
@@ -667,7 +667,7 @@ def test_ranking_enriched_day_not_found(client):
 
 def test_topix33_day_not_found(client):
     err = _make_http_error("https://r2.example.com/topix33/topix33_2026-02-28.json", 404)
-    with patch("app.routers.topix33.cache.get_day", new=AsyncMock(side_effect=err)):
+    with patch("app.routers.topix33.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.topix33.fetch_observation_day", new=AsyncMock(side_effect=err)):
         resp = client.get("/topix33/2026-02-28")
     assert resp.status_code == 404
     assert "2026-02-28" in resp.json()["detail"]
@@ -675,7 +675,7 @@ def test_topix33_day_not_found(client):
 
 def test_nikkei_day_not_found(client):
     err = _make_http_error("https://r2.example.com/nikkei-contribution/nikkei_contribution_2026-02-28.json", 404)
-    with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(side_effect=err)):
+    with patch("app.routers.nikkei.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.nikkei.fetch_observation_day", new=AsyncMock(side_effect=err)):
         resp = client.get("/nikkei/2026-02-28")
     assert resp.status_code == 404
     assert "2026-02-28" in resp.json()["detail"]
@@ -743,7 +743,7 @@ def test_yutai_month_accepts_market_info_month_shape(client):
 
 def test_nikkei_day_accepts_market_info_records_without_rank(client):
     day = _load_fixture("nikkei_day_real_shape.json")
-    with patch("app.routers.nikkei.cache.get_day", new=AsyncMock(return_value=day)):
+    with patch("app.routers.nikkei.get_manifest", new=AsyncMock(return_value={})), patch("app.routers.nikkei.fetch_observation_day", new=AsyncMock(return_value=day)):
         resp = client.get("/nikkei/2026-02-06")
     assert resp.status_code == 200
     assert "rank" not in resp.json()["records"][0]
