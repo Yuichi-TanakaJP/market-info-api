@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from app import cache, r2
+from app.market_observation import MarketObservation, MarketSnapshot, fetch_observation_day
 from app.range_service import (
     RangeEnvelope,
     RangeRequestTooLarge,
@@ -23,6 +24,9 @@ _PREFIX = "stock-ranking"
 
 
 class RankingManifest(BaseModel):
+    snapshots: dict[str, MarketSnapshot] = {}
+    observation: MarketObservation | None = None
+    latest_market_observation: MarketSnapshot | None = None
     model_config = ConfigDict(extra="allow")
     dates: list[str]
     latest: str
@@ -41,6 +45,7 @@ class RankingRecord(BaseModel):
 
 
 class RankingDay(BaseModel):
+    observation: MarketObservation | None = None
     model_config = ConfigDict(extra="allow")
     date: str
     records: list[RankingRecord]
@@ -89,14 +94,12 @@ def _file_key(date_str: str) -> str:
     return date_str.replace("-", "")
 
 
-async def _get_day_payload(date_str: str, *, manifest_version_key: str | None = None) -> dict:
-    file_key = _file_key(date_str)
-    cache_key = f"{_PREFIX}/{file_key}"
-    if manifest_version_key:
-        cache_key = f"{cache_key}:{manifest_version_key}"
-    return await cache.get_day(
-        cache_key,
-        lambda: r2.fetch_json(f"{_PREFIX}/{file_key}.json"),
+async def _get_day_payload(date_str: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None) -> dict:
+    file_name = f"{_file_key(date_str)}.json"
+    manifest = captured_manifest if captured_manifest is not None else await get_manifest()
+    return await fetch_observation_day(
+        prefix=_PREFIX, file_name=file_name, date_str=date_str, manifest=manifest,
+        manifest_version_key=manifest_version_key,
     )
 
 
@@ -218,7 +221,7 @@ async def get_range(
             manifest=manifest,
             fetch_day=lambda source_date, version: _get_day_payload(
                 source_date,
-                manifest_version_key=version,
+                manifest_version_key=version, captured_manifest=manifest,
             ),
             bucket=bucket,
         )
@@ -273,7 +276,7 @@ async def search(
     async def build_index() -> dict:
         items: list[dict] = []
         for source_date in source_dates:
-            payload = await _get_day_payload(source_date, manifest_version_key=version)
+            payload = await _get_day_payload(source_date, manifest_version_key=version, captured_manifest=manifest)
             for record in payload.get("records", []):
                 if isinstance(record, dict):
                     items.append(_compact_record(source_date, record))

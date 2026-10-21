@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
+from app.market_observation import MarketObservation, MarketSnapshot, fetch_observation_day
 from app.range_service import RangeEnvelope, RangeRequestTooLarge, build_daily_range
 
 router = APIRouter(prefix="/nikkei", tags=["nikkei"])
@@ -16,6 +17,9 @@ _MANIFEST_FILE = "nikkei_contribution_manifest.json"
 
 
 class NikkeiManifest(BaseModel):
+    snapshots: dict[str, MarketSnapshot] = {}
+    observation: MarketObservation | None = None
+    latest_market_observation: MarketSnapshot | None = None
     model_config = ConfigDict(extra="allow")
     dates: list[str]
     latest_date: str
@@ -48,6 +52,7 @@ class NikkeiRecord(BaseModel):
 
 
 class NikkeiDay(BaseModel):
+    observation: MarketObservation | None = None
     model_config = ConfigDict(extra="allow")
     date: str
     index: str
@@ -57,14 +62,12 @@ class NikkeiDay(BaseModel):
     records: list[NikkeiRecord]
 
 
-async def _get_day_payload(date_str: str, *, manifest_version_key: str | None = None) -> dict:
+async def _get_day_payload(date_str: str, *, manifest_version_key: str | None = None, captured_manifest: dict | None = None) -> dict:
     file_name = f"nikkei_contribution_{date_str}.json"
-    cache_key = f"{_PREFIX}/{date_str}"
-    if manifest_version_key:
-        cache_key = f"{cache_key}:{manifest_version_key}"
-    return await cache.get_day(
-        cache_key,
-        lambda: r2.fetch_json(f"{_PREFIX}/{file_name}"),
+    manifest = captured_manifest if captured_manifest is not None else await get_manifest()
+    return await fetch_observation_day(
+        prefix=_PREFIX, file_name=file_name, date_str=date_str, manifest=manifest,
+        manifest_version_key=manifest_version_key,
     )
 
 
@@ -117,7 +120,7 @@ async def get_range(
             manifest=manifest,
             fetch_day=lambda source_date, version: _get_day_payload(
                 source_date,
-                manifest_version_key=version,
+                manifest_version_key=version, captured_manifest=manifest,
             ),
             bucket=bucket,
         )

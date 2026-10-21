@@ -978,3 +978,13 @@ curl https://market-info-api-619599800912.asia-northeast1.run.app/tdnet/disclosu
 ```
 https://market-info-api-619599800912.asia-northeast1.run.app/docs
 ```
+
+## Domestic source-date metadata
+
+Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` then dated endpoints. Example addition to a day payload (original records/summary remain unchanged):
+
+```json
+{"observation":{"snapshot_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","source":"naito_sector","market_date":null,"date_basis":"unknown","source_observed_at":null,"collected_at":"2026-10-20T00:50:00Z","generated_at":"2026-10-20T00:51:00Z","input_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}
+```
+
+`null` source date is an expected supported state. Show save date, collection time and generation time separately. Read `latest_market_observation` only as the latest confirmed market date, never as confirmation of another acquisition.
