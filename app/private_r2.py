@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 
-import boto3
-from botocore.config import Config
 
 from app import config
 
@@ -18,6 +16,10 @@ def _required(value: str, name: str) -> str:
 
 
 def _build_client():
+    # Public requests do not use the private S3 SDK.
+    import boto3
+    from botocore.config import Config
+
     return boto3.client(
         "s3",
         endpoint_url=_required(

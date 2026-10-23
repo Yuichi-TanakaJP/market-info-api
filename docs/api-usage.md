@@ -988,3 +988,5 @@ Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` th
 ```
 
 `null` source date is an expected supported state. Show save date, collection time and generation time separately. Read `latest_market_observation` only as the latest confirmed market date, never as confirmation of another acquisition.
+
+国内ランキング/TOPIX33/寄与度: manifestは30秒、日次本文は不変snapshot単位24時間。date URL自体は可変なのでHTTP no-store。他の6時間TTLは従来どおり。
