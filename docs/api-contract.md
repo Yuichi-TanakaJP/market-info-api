@@ -631,3 +631,7 @@ For dated reads, API resolves the current manifest reference and validates immut
 Producer acquisition -> raw receipt -> normalized input -> JSON snapshot -> manifest -> API -> UI is the date responsibility chain. The API does not infer ranking or contribution dates from the independent index summary. Missing source-day metadata is UNKNOWN, never an API-generated proof of correctness.
 
 Rollback consumer/API then producer, preserving old aliases and all snapshots/receipts. No production backfill or object rewrite is part of these changes.
+
+## 国内市場3種の可変manifest（2026-10-24）
+
+ランキング・TOPIX33・寄与度のmanifestのみAPI内TTL30秒、期限後は新規取得を待つ。R2への要求はno-cacheで再検証し、可変date/manifest URLのHTTP応答はno-store。不変snapshotは従来の24時間保持。同日再取得はsnapshot参照の変更で反映する。他ドメインの6時間TTLは変更しない。取得失敗を旧manifestで成功扱いせず502とする。R2接続はlifespan内で共有し終了時にcloseする。

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from app import r2
+
 
 from app.routers import (
     disclosure_events,
@@ -28,7 +32,17 @@ from app.routers import (
     yutai_stock_prices,
 )
 
+@asynccontextmanager
+async def lifespan(app):
+    try:
+        yield
+    finally:
+        await r2.close_client()
+
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="market-info-api",
     description=(
         "market_info が生成した JSON を mini-tools に提供する薄い API レイヤー。\n\n"
@@ -41,6 +55,7 @@ app = FastAPI(
         "## キャッシュ\n\n"
         "レスポンスはサーバー側でインメモリキャッシュされる。"
         "可変データ（latest / manifest 系）は **TTL 6時間**、不変データ（過去日次・月次）は **TTL 24時間**。\n\n"
+        "国内ランキング・TOPIX33・寄与度のmanifestのみ30秒（期限後は新規取得待ち）。\n\n"
         "## 更新スケジュール\n\n"
         "| エンドポイント | 更新頻度 | キャッシュ種別 |\n"
         "|---|---|---|\n"
@@ -48,13 +63,13 @@ app = FastAPI(
         "| `/econ-calendar/weekly/meta` | 平日 1日1回（01:00 UTC） | 可変（6時間） |\n"
         "| `/earnings-calendar/*/latest` | 不定期（決算データ更新時） | 可変（6時間） |\n"
         "| `/earnings-calendar/*/monthly/{year_month}` | 不定期 | 不変（24時間） |\n"
-        "| `/ranking/manifest` | 営業日ごと（日次バッチ後） | 可変（6時間） |\n"
+        "| `/ranking/manifest` | 営業日ごと（日次バッチ後） | 可変（30秒） |\n"
         "| `/ranking/{date}` | 営業日ごと | 不変（24時間） |\n"
         "| `/ranking-enriched/manifest` | 営業日ごと（publish された場合） | 可変（6時間） |\n"
         "| `/ranking-enriched/{date}` | 営業日ごと（publish された場合） | 不変（24時間） |\n"
-        "| `/nikkei/manifest` | 営業日ごと | 可変（6時間） |\n"
+        "| `/nikkei/manifest` | 営業日ごと | 可変（30秒） |\n"
         "| `/nikkei/{date}` | 営業日ごと | 不変（24時間） |\n"
-        "| `/topix33/manifest` | 営業日ごと | 可変（6時間） |\n"
+        "| `/topix33/manifest` | 営業日ごと | 可変（30秒） |\n"
         "| `/topix33/{date}` | 営業日ごと | 不変（24時間） |\n"
         "| `/us-ranking/manifest` | 営業日ごと（日次バッチ後） | 可変（6時間） |\n"
         "| `/us-ranking/{date}` | 営業日ごと | 不変（24時間） |\n"
@@ -92,6 +107,15 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+@app.middleware("http")
+async def observation_cache_headers(request, call_next):
+    response = await call_next(request)
+    parts = request.url.path.strip("/").split("/")
+    if len(parts) == 2 and parts[0] in {"ranking", "topix33", "nikkei"}:
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 app.include_router(health.router)
 app.include_router(earnings_calendar.router)

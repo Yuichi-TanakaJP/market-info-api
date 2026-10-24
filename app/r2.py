@@ -5,6 +5,21 @@ import httpx
 from app.config import R2_PUBLIC_BASE_URL
 
 _TIMEOUT = 5.0
+_client: httpx.AsyncClient | None = None
+
+
+async def close_client() -> None:
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+
+
+def get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=_TIMEOUT)
+    return _client
 
 
 async def fetch_json(path: str) -> dict:
@@ -18,9 +33,9 @@ async def fetch_json(path: str) -> dict:
         RuntimeError: if the response is not a JSON object.
     """
     url = f"{R2_PUBLIC_BASE_URL}/{path}"
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
+    mutable = path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json"}
+    resp = await get_client().get(url, headers={"Cache-Control": "no-cache"} if mutable else {})
+    resp.raise_for_status()
     data = resp.json()
     if not isinstance(data, dict):
         raise RuntimeError(f"expected JSON object from {url}, got {type(data).__name__}")
@@ -30,9 +45,8 @@ async def fetch_json(path: str) -> dict:
 async def fetch_json_array(path: str) -> list:
     """Fetch a JSON array from an R2 public URL."""
     url = f"{R2_PUBLIC_BASE_URL}/{path}"
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
+    resp = await get_client().get(url)
+    resp.raise_for_status()
     data = resp.json()
     if not isinstance(data, list):
         raise RuntimeError(f"expected JSON array from {url}, got {type(data).__name__}")

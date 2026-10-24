@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable
 from cachetools import TTLCache
 
 _MANIFEST_TTL = 21600  # 6時間（可変データ）
+_OBSERVATION_MANIFEST_TTL = 30  # mutable acquisition pointers
 _DAY_TTL = 86400  # 24時間（不変データ）
 
 MUTABLE_HTTP_CACHE_CONTROL = "public, max-age=300"
@@ -14,6 +15,7 @@ IMMUTABLE_HTTP_CACHE_CONTROL = "public, max-age=31536000, immutable"
 PRIVATE_HTTP_CACHE_CONTROL = "private, no-store"
 
 _manifest_cache: TTLCache = TTLCache(maxsize=16, ttl=_MANIFEST_TTL)
+_observation_manifest_cache: TTLCache = TTLCache(maxsize=16, ttl=_OBSERVATION_MANIFEST_TTL)
 _day_cache: TTLCache = TTLCache(maxsize=128, ttl=_DAY_TTL)
 _range_current_cache: TTLCache = TTLCache(maxsize=64, ttl=_MANIFEST_TTL)
 _range_past_cache: TTLCache = TTLCache(maxsize=64, ttl=_DAY_TTL)
@@ -43,7 +45,8 @@ async def get_or_fetch(
 
 
 async def get_manifest(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
-    return await get_or_fetch(_manifest_cache, key, fetch_fn)
+    target = _observation_manifest_cache if key in {"stock-ranking/manifest", "topix33/manifest", "nikkei-contribution/manifest"} else _manifest_cache
+    return await get_or_fetch(target, key, fetch_fn)
 
 
 async def get_day(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
