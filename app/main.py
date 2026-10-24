@@ -75,11 +75,11 @@ app = FastAPI(
         "| `/us-ranking/{date}` | 営業日ごと | 不変（24時間） |\n"
         "| `/market-rankings/*/manifest` | 月次 | 可変（6時間） |\n"
         "| `/market-rankings/*/monthly/{year_month}` | 月次 | 不変（24時間） |\n"
-        "| `/investor-flow/latest` | 週次 | 可変（6時間） |\n"
-        "| `/investor-flow/manifest` | 週次 | 可変（6時間） |\n"
+        "| `/investor-flow/latest` | 週次 | 可変（30秒） |\n"
+        "| `/investor-flow/manifest` | 週次 | 可変（30秒） |\n"
         "| `/investor-flow/weeks/{start_date}/{end_date}` | 週次 | 不変（24時間） |\n"
-        "| `/investor-flow/analysis/latest` | 週次 | 可変（6時間） |\n"
-        "| `/investor-flow/analysis/manifest` | 週次 | 可変（6時間） |\n"
+        "| `/investor-flow/analysis/latest` | 週次 | 可変（30秒） |\n"
+        "| `/investor-flow/analysis/manifest` | 週次 | 可変（30秒） |\n"
         "| `/investor-flow/analysis/weeks/{start_date}/{end_date}` | 週次 | 不変（24時間） |\n"
         "| `/sbi/credit/latest` | 週次 | 可変（6時間） |\n"
         "| `/sbi/credit/monthly/{year_month}` | 週次 | 不変（24時間） |\n"
@@ -113,6 +113,8 @@ async def observation_cache_headers(request, call_next):
     response = await call_next(request)
     parts = request.url.path.strip("/").split("/")
     if len(parts) == 2 and parts[0] in {"ranking", "topix33", "nikkei"}:
+        response.headers["Cache-Control"] = "no-store"
+    if request.url.path in {"/investor-flow/latest", "/investor-flow/manifest", "/investor-flow/analysis/latest", "/investor-flow/analysis/manifest"}:
         response.headers["Cache-Control"] = "no-store"
     return response
 

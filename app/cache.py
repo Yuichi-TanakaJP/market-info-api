@@ -45,7 +45,7 @@ async def get_or_fetch(
 
 
 async def get_manifest(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
-    target = _observation_manifest_cache if key in {"stock-ranking/manifest", "topix33/manifest", "nikkei-contribution/manifest"} else _manifest_cache
+    target = _observation_manifest_cache if key in {"stock-ranking/manifest", "topix33/manifest", "nikkei-contribution/manifest", "investor-flow/manifest", "investor-flow/latest", "investor-flow-analysis/manifest", "investor-flow-analysis/latest"} else _manifest_cache
     return await get_or_fetch(target, key, fetch_fn)
 
 

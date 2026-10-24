@@ -33,7 +33,7 @@ async def fetch_json(path: str) -> dict:
         RuntimeError: if the response is not a JSON object.
     """
     url = f"{R2_PUBLIC_BASE_URL}/{path}"
-    mutable = path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json"}
+    mutable = path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json", "investor-flow/manifest.json", "investor-flow/latest.json", "investor-flow-analysis/manifest.json", "investor-flow-analysis/latest.json"}
     resp = await get_client().get(url, headers={"Cache-Control": "no-cache"} if mutable else {})
     resp.raise_for_status()
     data = resp.json()

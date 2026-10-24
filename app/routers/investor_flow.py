@@ -198,7 +198,7 @@ class InvestorFlowAnalysisPayload(BaseModel):
 async def get_latest() -> dict:
     """最新週の JPX 投資主体別売買動向を返す。
 
-    更新単位: 週次。キャッシュ TTL: 6時間（可変）。
+    更新単位: 週次。キャッシュ TTL: 30秒（可変）。
     """
     try:
         return await cache.get_manifest(
@@ -221,7 +221,7 @@ async def get_latest() -> dict:
 async def get_manifest() -> dict:
     """利用可能な週次 snapshot の一覧を返す。
 
-    キャッシュ TTL: 6時間（可変）。
+    キャッシュ TTL: 30秒（可変）。
     """
     try:
         return await cache.get_manifest(
@@ -278,7 +278,7 @@ async def get_week(start_date: str, end_date: str) -> dict:
 async def get_analysis_latest() -> dict:
     """最新週の JPX 投資主体別売買動向から生成した分析サマリーを返す。
 
-    更新単位: 週次。キャッシュ TTL: 6時間（可変）。
+    更新単位: 週次。キャッシュ TTL: 30秒（可変）。
     """
     try:
         return await cache.get_manifest(
@@ -301,7 +301,7 @@ async def get_analysis_latest() -> dict:
 async def get_analysis_manifest() -> dict:
     """利用可能な分析サマリー snapshot の一覧を返す。
 
-    キャッシュ TTL: 6時間（可変）。
+    キャッシュ TTL: 30秒（可変）。
     """
     try:
         return await cache.get_manifest(

@@ -486,7 +486,7 @@ mini-tools backend が Premium を検証した後に、この Bearer token を�
 token をブラウザー、HTML、JavaScript bundle、`NEXT_PUBLIC_*` へ含めてはならない。
 
 レスポンスは `Cache-Control: private, no-store` とする。Cloud Run process 内では
-`latest` を6時間 cache するため、R2 read はリクエストごとには発生しない。
+投資部門別の `latest` / `manifest` は30秒 cacheし、R2 readはリクエストごとには発生しない。
 
 ---
 
@@ -634,4 +634,9 @@ Rollback consumer/API then producer, preserving old aliases and all snapshots/re
 
 ## 国内市場3種の可変manifest（2026-10-24）
 
-ランキング・TOPIX33・寄与度のmanifestのみAPI内TTL30秒、期限後は新規取得を待つ。R2への要求はno-cacheで再検証し、可変date/manifest URLのHTTP応答はno-store。不変snapshotは従来の24時間保持。同日再取得はsnapshot参照の変更で反映する。他ドメインの6時間TTLは変更しない。取得失敗を旧manifestで成功扱いせず502とする。R2接続はlifespan内で共有し終了時にcloseする。
+ランキング・TOPIX33・寄与度のmanifestのみAPI内TTL30秒、期限後は新規取得を待つ。R2への要求はno-cacheで再検証し、可変date/manifest URLのHTTP応答はno-store。不変snapshotは従来の24時間保持。同日再取得はsnapshot参照の変更で反映する。投資部門別の可変4種も30秒へ移行する。他ドメインの6時間TTLは変更しない。取得失敗を旧manifestで成功扱いせず502とする。R2接続はlifespan内で共有し終了時にcloseする。
+
+
+### 投資部門別売買の公開更新
+
+`/investor-flow/latest`, `/investor-flow/manifest`, `/investor-flow/analysis/latest`, `/investor-flow/analysis/manifest` はAPI内TTL30秒、HTTP no-store。R2への取得はno-cacheで再検証する。週指定snapshotの24時間TTLは維持する。失敗した再検証を古い値による成功に置き換えない。画面の60秒確認と合わせ、通常の公開完了から約90秒＋通信時間以内を更新目標とする（SLA実測ではない）。APIの再配備を通常更新の手順にしない。
