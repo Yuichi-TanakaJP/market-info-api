@@ -7,7 +7,7 @@ from app import cache
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("prefix", ["stock-ranking", "topix33", "nikkei-contribution"])
+@pytest.mark.parametrize("prefix", ["stock-ranking", "topix33", "nikkei-contribution", "investor-flow", "investor-flow-analysis"])
 async def test_mutable_pointer_expires_and_failed_refresh_never_renews_old_data(monkeypatch, prefix):
     clock = [0]
     store = TTLCache(maxsize=16, ttl=30, timer=lambda: clock[0])
@@ -42,3 +42,27 @@ async def test_r2_reuses_client_and_revalidates_only_mutable_pointers(monkeypatc
     await r2.close_client()
     assert client.is_closed
     assert r2._client is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("key", ["investor-flow/latest", "investor-flow-analysis/latest"])
+async def test_weekly_latest_uses_short_ttl(monkeypatch, key):
+    clock = [0]
+    monkeypatch.setattr(cache, "_observation_manifest_cache", TTLCache(maxsize=16, ttl=30, timer=lambda: clock[0]))
+    fetch = AsyncMock(side_effect=[{"week": "old"}, {"week": "new"}])
+    assert await cache.get_manifest(key, fetch) == {"week": "old"}
+    clock[0] = 31
+    assert await cache.get_manifest(key, fetch) == {"week": "new"}
+
+
+@pytest.mark.asyncio
+async def test_weekly_r2_revalidates_only_mutable_files(monkeypatch):
+    from app import r2
+    seen = []
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda req: (seen.append(req) or httpx.Response(200, json={}))))
+    monkeypatch.setattr(r2, "_client", client)
+    for family in ("investor-flow", "investor-flow-analysis"):
+        for file in ("manifest.json", "latest.json", "dated.json"):
+            await r2.fetch_json(f"{family}/{file}")
+    assert [req.headers.get("cache-control") for req in seen] == ["no-cache", "no-cache", None] * 2
+    await client.aclose()

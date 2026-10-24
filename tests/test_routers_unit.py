@@ -1203,3 +1203,16 @@ def test_investor_flow_analysis_latest_not_found(client):
         resp = client.get("/investor-flow/analysis/latest")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "investor-flow analysis latest not found"
+
+
+@pytest.mark.parametrize("path,fixture", [
+    ("/investor-flow/latest", "investor_flow_latest_real_shape.json"),
+    ("/investor-flow/manifest", "investor_flow_manifest_real_shape.json"),
+    ("/investor-flow/analysis/latest", "investor_flow_analysis_latest_real_shape.json"),
+    ("/investor-flow/analysis/manifest", "investor_flow_analysis_manifest_real_shape.json"),
+])
+def test_investor_flow_mutable_http_cache_is_disabled(client, path, fixture):
+    with patch("app.routers.investor_flow.cache.get_manifest", new=AsyncMock(return_value=_load_fixture(fixture))):
+        response = client.get(path)
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"

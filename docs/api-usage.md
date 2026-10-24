@@ -910,7 +910,8 @@ GET /market-calendar/us-closed
 
 | 種別 | TTL | 対象の例 |
 |------|-----|---------|
-| manifest / latest 系 | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| manifest / latest 系（下記例外を除く） | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| 投資部門別 raw/analysis latest・manifest | 30秒 | HTTP no-store、R2再検証 |
 | EDINET Filing Index v2 | 6時間 | `/edinet/filing-index/v2/{date}` を含む |
 | EDINET Large Holding compact v1 | 6時間 | `/edinet/large-holding/v1/{date}` を含む |
 | 不変の日次・月次データ | 24時間 | その他の `*/YYYY-MM-DD`, `*/monthly/YYYY-MM` |
@@ -990,3 +991,8 @@ Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` th
 `null` source date is an expected supported state. Show save date, collection time and generation time separately. Read `latest_market_observation` only as the latest confirmed market date, never as confirmation of another acquisition.
 
 国内ランキング/TOPIX33/寄与度: manifestは30秒、日次本文は不変snapshot単位24時間。date URL自体は可変なのでHTTP no-store。他の6時間TTLは従来どおり。
+
+
+### 投資部門別売買の公開更新
+
+`/investor-flow/latest`, `/investor-flow/manifest`, `/investor-flow/analysis/latest`, `/investor-flow/analysis/manifest` はAPI内TTL30秒、HTTP no-store。R2への取得はno-cacheで再検証する。週指定snapshotの24時間TTLは維持する。失敗した再検証を古い値による成功に置き換えない。画面の60秒確認と合わせ、通常の公開完了から約90秒＋通信時間以内を更新目標とする（SLA実測ではない）。APIの再配備を通常更新の手順にしない。

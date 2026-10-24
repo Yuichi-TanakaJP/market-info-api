@@ -44,7 +44,7 @@
 
 #### キャッシュ
 - TTL 値は `app/cache.py` の `_MANIFEST_TTL`（21600秒=6時間）/ `_DAY_TTL`（86400秒=24時間）で一元管理する
-- 国内3種の可変manifestは `_OBSERVATION_MANIFEST_TTL`（30秒）を使う。router で直接数値を書かない
+- 国内3種の可変manifestと投資部門別売買のraw/analysis latest・manifestは `_OBSERVATION_MANIFEST_TTL`（30秒）を使う。router で直接数値を書かない
 
 #### テスト
 - router unit test は `tests/fixtures/` の実 artifact shape（real_shape）を使う回帰ケースを必ず含める
