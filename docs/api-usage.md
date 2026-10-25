@@ -996,3 +996,5 @@ Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` th
 ### 投資部門別売買の公開更新
 
 `/investor-flow/latest`, `/investor-flow/manifest`, `/investor-flow/analysis/latest`, `/investor-flow/analysis/manifest` はAPI内TTL30秒、HTTP no-store。R2への取得はno-cacheで再検証する。週指定snapshotの24時間TTLは維持する。失敗した再検証を古い値による成功に置き換えない。画面の60秒確認と合わせ、通常の公開完了から約90秒＋通信時間以内を更新目標とする（SLA実測ではない）。APIの再配備を通常更新の手順にしない。
+
+優待株価 `/yutai/stock-prices/latest` のAPI内TTLは30秒。認証とprivate, no-storeは維持し、他の優待endpointのTTLは変更しない。

@@ -65,7 +65,7 @@ def _private_error(status_code: int, detail: str) -> HTTPException:
 async def get_latest(response: Response) -> dict:
     """所有者専用の優待株価latestを返す。
 
-    Authorization Bearer token必須。更新単位は日次、サーバーcache TTLは6時間。
+    Authorization Bearer token必須。更新単位は日次、サーバーcache TTLは30秒。
     ブラウザー/CDNには保存させない。
     """
     response.headers["Cache-Control"] = cache.PRIVATE_HTTP_CACHE_CONTROL
