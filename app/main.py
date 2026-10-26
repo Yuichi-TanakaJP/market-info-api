@@ -89,7 +89,7 @@ app = FastAPI(
         "| `/yutai/launch-display/latest` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/launch-display/manifest` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/launch-display/monthly/{year_month}` | 月次 | 可変（6時間・private） |\n"
-        "| `/yutai/stock-prices/latest` | 日次 | 可変（6時間・private） |\n"
+        "| `/yutai/stock-prices/latest` | 日次 | 可変（30秒・private） |\n"
         "| `/stock-master/latest` | publish 時 | 可変（6時間） |\n"
         "| `/reference/jpx-listed-companies/latest`, `/manifest` | 月次publish時 | 可変（6時間） |\n"
         "| `/reference/jpx-listed-companies/{date}` | 月次publish時 | 不変（24時間） |\n"

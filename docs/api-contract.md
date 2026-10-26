@@ -89,7 +89,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/manifest`, `/yutai/monthly/*` | 月次 | 月初に publish |
 | `/yutai/launch-display/*` | 月次・随時 | Private R2 の launch-display JSON を返す。サーバー cache は6時間 |
-| `/yutai/stock-prices/latest` | 日次 | Private R2 の latest を返す。サーバー cache は6時間 |
+| `/yutai/stock-prices/latest` | 日次 | Private R2 の latest を返す。サーバー cache は30秒 |
 | `/stock-master/latest` | publish 時 | 銘柄マスター生成・publish 時。latest-only reference |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
 | `/market-rankings/dividend-yield/*` | 月次 | 月初に publish |
