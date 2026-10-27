@@ -6,6 +6,8 @@ from typing import Any, Awaitable, Callable
 
 from cachetools import TTLCache
 
+from app.tdnet_cache_policy import TDNET_MUTABLE_KEYS
+
 _MANIFEST_TTL = 21600  # 6時間（可変データ）
 _OBSERVATION_MANIFEST_TTL = 30  # mutable acquisition pointers
 _DAY_TTL = 86400  # 24時間（不変データ）
@@ -45,6 +47,10 @@ async def get_or_fetch(
 
 
 async def get_manifest(key: str, fetch_fn: Callable[[], Awaitable[Any]]) -> Any:
+    # A mutable TDNET pointer is checked upstream on every request, even if
+    # an older entry remains in a process-local cache. Never serve stale on error.
+    if key in TDNET_MUTABLE_KEYS:
+        return await fetch_fn()
     target = _observation_manifest_cache if key in {"stock-ranking/manifest", "topix33/manifest", "nikkei-contribution/manifest", "investor-flow/manifest", "investor-flow/latest", "investor-flow-analysis/manifest", "investor-flow-analysis/latest", "yutai-stock-prices/latest"} else _manifest_cache
     return await get_or_fetch(target, key, fetch_fn)
 

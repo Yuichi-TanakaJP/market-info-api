@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from app import r2
+from app.tdnet_cache_policy import TDNET_HTTP_CACHE_CONTROL, TDNET_MUTABLE_API_PATHS
 
 
 from app.routers import (
@@ -56,6 +57,7 @@ app = FastAPI(
         "レスポンスはサーバー側でインメモリキャッシュされる。"
         "可変データ（latest / manifest 系）は **TTL 6時間**、不変データ（過去日次・月次）は **TTL 24時間**。\n\n"
         "国内ランキング・TOPIX33・寄与度のmanifestのみ30秒（期限後は新規取得待ち）。\n\n"
+        "TDNET関連のlatest / manifest 5経路は毎回R2を再確認し、HTTP no-storeで返す。\n\n"
         "## 更新スケジュール\n\n"
         "| エンドポイント | 更新頻度 | キャッシュ種別 |\n"
         "|---|---|---|\n"
@@ -96,11 +98,11 @@ app = FastAPI(
         "| `/market-calendar/*` | 不定期（年次更新時） | 可変（6時間） |\n"
         "| `/edinet/document-list/latest` | 平日 1日1回 | 可変（6時間） |\n"
         "| `/edinet/document-list/{date}` | 1日1回 | 不変（24時間） |\n"
-        "| `/tdnet/disclosures/latest` | 平日 1日1回 | 可変（6時間） |\n"
+        "| `/tdnet/disclosures/latest` | 平日 1日1回 | 毎回R2再確認（no-store） |\n"
         "| `/tdnet/disclosures/{date}` | 1日1回 | 不変（24時間） |\n"
-        "| `/tdnet/router-events/latest`, `/manifest` | TDNET日次バッチ後 | 可変（6時間） |\n"
+        "| `/tdnet/router-events/latest`, `/manifest` | TDNET日次バッチ後 | 毎回R2再確認（no-store） |\n"
         "| `/tdnet/router-events/{date}` | TDNET日次バッチ後 | 不変（24時間） |\n"
-        "| `/disclosure-events/latest`, `/manifest` | 平日 1日1回 | 可変（6時間） |\n"
+        "| `/disclosure-events/latest`, `/manifest` | 平日 1日1回 | 毎回R2再確認（no-store） |\n"
         "| `/disclosure-events/{date}` | 1日1回 | 不変（24時間） |\n\n"
         "> **ポーリングはデータの更新頻度に基づいて決定すること**（キャッシュ TTL ではなく）。"
         "全データは最短でも 1日1回の更新のため、ポーリング自体が不要なケースがほとんど。"
@@ -116,6 +118,8 @@ async def observation_cache_headers(request, call_next):
         response.headers["Cache-Control"] = "no-store"
     if request.url.path in {"/investor-flow/latest", "/investor-flow/manifest", "/investor-flow/analysis/latest", "/investor-flow/analysis/manifest"}:
         response.headers["Cache-Control"] = "no-store"
+    if request.url.path in TDNET_MUTABLE_API_PATHS:
+        response.headers["Cache-Control"] = TDNET_HTTP_CACHE_CONTROL
     return response
 
 

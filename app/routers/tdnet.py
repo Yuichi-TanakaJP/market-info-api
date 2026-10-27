@@ -57,7 +57,7 @@ async def get_disclosures_latest() -> dict:
     - `items`: 適時開示エントリの配列
 
     この API は PDF を再配信せず、market_info が抽出した TDNET 原文 URL を返す。
-    更新単位: 平日 1日1回（TDNET 取得バッチ後）。キャッシュ TTL: 6時間（可変）。
+    更新単位: 平日 1日1回（TDNET 取得バッチ後）。サーバーcacheなし。毎回R2を再確認し、HTTP no-storeで返す。
     """
     try:
         return await cache.get_manifest(

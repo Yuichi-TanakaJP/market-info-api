@@ -1,0 +1,12 @@
+{
+  "schema_version": "tdnet-router-events-manifest-v1",
+  "generated_at": "2026-06-12T00:00:00Z",
+  "latest": "2026-06-12",
+  "entries": [
+    {
+      "date": "2026-06-12",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event_count": 1
+    }
+  ]
+}

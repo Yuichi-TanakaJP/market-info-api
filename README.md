@@ -191,7 +191,8 @@ curl "http://localhost:8000/references/industries/1"
 
 | 種別 | TTL |
 |------|-----|
-| 可変データ（latest / manifest） | 6 時間 |
+| 可変データ（latest / manifest、下記例外を除く） | 6 時間 |
+| TDNET関連のlatest / manifest 5経路 | server cacheなし・毎回R2再確認、HTTP no-store |
 | EDINET Filing Index v2（日付指定を含む） | 6 時間 |
 | 不変データ（過去日次・月次・generation index / detail） | 24 時間 |
 

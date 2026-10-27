@@ -3,6 +3,7 @@ from __future__ import annotations
 import httpx
 
 from app.config import R2_PUBLIC_BASE_URL
+from app.tdnet_cache_policy import TDNET_MUTABLE_OBJECTS
 
 _TIMEOUT = 5.0
 _client: httpx.AsyncClient | None = None
@@ -33,7 +34,7 @@ async def fetch_json(path: str) -> dict:
         RuntimeError: if the response is not a JSON object.
     """
     url = f"{R2_PUBLIC_BASE_URL}/{path}"
-    mutable = path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json", "investor-flow/manifest.json", "investor-flow/latest.json", "investor-flow-analysis/manifest.json", "investor-flow-analysis/latest.json"}
+    mutable = path in TDNET_MUTABLE_OBJECTS or path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json", "investor-flow/manifest.json", "investor-flow/latest.json", "investor-flow-analysis/manifest.json", "investor-flow-analysis/latest.json"}
     resp = await get_client().get(url, headers={"Cache-Control": "no-cache"} if mutable else {})
     resp.raise_for_status()
     data = resp.json()

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
+from app.tdnet_cache_policy import TDNET_HTTP_CACHE_CONTROL
 
 router = APIRouter(prefix="/disclosure-events", tags=["disclosure-events"])
 
@@ -56,8 +57,8 @@ class DisclosureEventsManifest(BaseModel):
 
 @router.get("/latest", response_model=DisclosureEventsPayload)
 async def get_latest(response: Response) -> dict:
-    """最新日の正規化済み開示イベントを返す。キャッシュTTL: 6時間。"""
-    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
+    """最新日の正規化済み開示イベントを返す。サーバーcacheなし、毎回R2再確認。HTTP no-store。"""
+    response.headers["Cache-Control"] = TDNET_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/latest",
@@ -75,8 +76,8 @@ async def get_latest(response: Response) -> dict:
 
 @router.get("/manifest", response_model=DisclosureEventsManifest)
 async def get_manifest(response: Response) -> dict:
-    """利用可能な日付一覧を返す。キャッシュTTL: 6時間。"""
-    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
+    """利用可能な日付一覧を返す。サーバーcacheなし、毎回R2再確認。HTTP no-store。"""
+    response.headers["Cache-Control"] = TDNET_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/manifest",
