@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from cachetools import TTLCache
+from cachetools import LRUCache, TTLCache
 from fastapi.testclient import TestClient
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -37,6 +37,8 @@ def app_runtime(monkeypatch):
     # Patch attributes and let monkeypatch restore them; do not reload shared modules.
     monkeypatch.setattr(config, "R2_PUBLIC_BASE_URL", "https://r2.example.test")
     monkeypatch.setattr(r2, "R2_PUBLIC_BASE_URL", "https://r2.example.test")
+    monkeypatch.setattr(r2, "_tdnet_bodies", LRUCache(maxsize=r2._TDNET_BODY_CACHE_BYTES, getsizeof=lambda entry: len(entry.body)))
+    monkeypatch.setattr(r2, "_tdnet_locks", {})
     monkeypatch.setattr(cache, "_manifest_cache", TTLCache(maxsize=32, ttl=21600))
     monkeypatch.setattr(cache, "_day_cache", TTLCache(maxsize=32, ttl=86400))
     return app, r2, cache
@@ -100,9 +102,9 @@ def test_failed_refresh_returns_error_not_stale_then_recovers(app_runtime, monke
 
     def handle(request):
         if state[0] == "first":
-            return httpx.Response(200, json=first)
+            return httpx.Response(200, json=first, headers={"ETag": '"v1"'})
         if state[0] == "recovered":
-            return httpx.Response(200, json=second)
+            return httpx.Response(200, json=second, headers={"ETag": '"v2"'})
         if failure == "timeout":
             raise httpx.ReadTimeout("synthetic timeout", request=request)
         if failure == "bad-json":
@@ -152,3 +154,37 @@ def test_dated_payload_keeps_immutable_cache(app_runtime, monkeypatch, key, fixt
     assert seen[0].headers.get("cache-control") is None
     expected_header = None if key == "tdnet/disclosures/latest" else "public, max-age=31536000, immutable"
     assert after.headers.get("cache-control") == expected_header
+
+
+@pytest.mark.parametrize("key,fixture", CASES)
+def test_conditional_get_reuses_304_body_and_updates_only_on_200(app_runtime, monkeypatch, key, fixture):
+    app, r2, _ = app_runtime
+    first, second = versions(fixture)
+    generation = [0]
+    seen = []
+    wire_bodies = []
+
+    def handle(request):
+        tag = f'"v{generation[0]}"'
+        seen.append(request.headers.get("if-none-match"))
+        if request.headers.get("if-none-match") == tag:
+            response = httpx.Response(304, headers={"ETag": tag})
+        else:
+            response = httpx.Response(200, json=[first, second][generation[0]], headers={"ETag": tag})
+        wire_bodies.append(response.content)
+        return response
+
+    monkeypatch.setattr(r2, "_client", httpx.AsyncClient(transport=httpx.MockTransport(handle)))
+    with TestClient(app) as client:
+        initial = client.get(f"/{key}")
+        unchanged = client.get(f"/{key}")
+        generation[0] = 1
+        changed = client.get(f"/{key}")
+        unchanged_again = client.get(f"/{key}")
+    assert [r.status_code for r in [initial, unchanged, changed, unchanged_again]] == [200] * 4
+    assert initial.json() == unchanged.json() == first
+    assert changed.json() == unchanged_again.json() == second
+    assert seen == [None, '"v0"', '"v0"', '"v1"']
+    assert wire_bodies[0] and wire_bodies[2]
+    assert wire_bodies[1] == wire_bodies[3] == b""
+    assert all(r.headers["cache-control"] == "no-store" for r in [initial, unchanged, changed, unchanged_again])

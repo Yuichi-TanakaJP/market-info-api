@@ -57,7 +57,7 @@ app = FastAPI(
         "レスポンスはサーバー側でインメモリキャッシュされる。"
         "可変データ（latest / manifest 系）は **TTL 6時間**、不変データ（過去日次・月次）は **TTL 24時間**。\n\n"
         "国内ランキング・TOPIX33・寄与度のmanifestのみ30秒（期限後は新規取得待ち）。\n\n"
-        "TDNET関連のlatest / manifest 5経路は毎回R2を再確認し、HTTP no-storeで返す。\n\n"
+        "TDNET関連のlatest / manifest 5経路は毎回R2へETag条件付き取得を行い、304では本文を再利用、HTTP no-storeで返す。\n\n"
         "## 更新スケジュール\n\n"
         "| エンドポイント | 更新頻度 | キャッシュ種別 |\n"
         "|---|---|---|\n"
