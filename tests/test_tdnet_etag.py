@@ -186,7 +186,7 @@ async def test_invalid_numeric_body_is_not_retained(r2_runtime, monkeypatch, con
     assert seen == [None, '"valid"', None]
 
 
-@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity", "1e999"])
 async def test_304_retained_body_parser_also_rejects_invalid_constants(r2_runtime, monkeypatch, constant):
     r2 = r2_runtime
     url = r2.R2_PUBLIC_BASE_URL + "/" + PATH
@@ -214,3 +214,72 @@ async def test_json_strings_named_nan_remain_valid(r2_runtime, monkeypatch):
     r2 = r2_runtime
     use_transport(monkeypatch, r2, lambda request: httpx.Response(200, json={"v": "NaN"}, headers={"ETag": '"v1"'}))
     assert await r2.fetch_json(PATH) == {"v": "NaN"}
+
+
+BAD_UNICODE = [
+    br'{"v":"\ud800"}',
+    br'{"\udc00":1}',
+    br'{"v":{"nested":"\udfff"}}',
+    b'{"v":"\xed\xa0\x80"}',
+]
+
+
+@pytest.mark.parametrize("bad_body", BAD_UNICODE)
+async def test_invalid_unicode_200_evicts_and_recovers_unconditionally(r2_runtime, monkeypatch, bad_body):
+    r2 = r2_runtime
+    seen = []
+    def handle(request):
+        seen.append(request.headers.get("if-none-match"))
+        if len(seen) == 2:
+            return httpx.Response(200, content=bad_body, headers={"ETag": '"bad"'})
+        return httpx.Response(200, json={"v": len(seen)}, headers={"ETag": '"valid"'})
+    use_transport(monkeypatch, r2, handle)
+    await r2.fetch_json(PATH)
+    with pytest.raises(UnicodeError):
+        await r2.fetch_json(PATH)
+    assert len(r2._tdnet_bodies) == 0
+    assert await r2.fetch_json(PATH) == {"v": 3}
+    assert seen == [None, '"valid"', None]
+
+
+@pytest.mark.parametrize("bad_body", BAD_UNICODE)
+async def test_invalid_unicode_304_evicts_and_recovers_unconditionally(r2_runtime, monkeypatch, bad_body):
+    r2 = r2_runtime
+    r2._tdnet_bodies[r2.R2_PUBLIC_BASE_URL + "/" + PATH] = r2._ETagBody('"bad"', bad_body)
+    seen = []
+    def handle(request):
+        seen.append(request.headers.get("if-none-match"))
+        if len(seen) == 1:
+            return httpx.Response(304, headers={"ETag": '"bad"'})
+        return httpx.Response(200, json={"v": 2}, headers={"ETag": '"v2"'})
+    use_transport(monkeypatch, r2, handle)
+    with pytest.raises(UnicodeError):
+        await r2.fetch_json(PATH)
+    assert len(r2._tdnet_bodies) == 0
+    assert await r2.fetch_json(PATH) == {"v": 2}
+    assert seen == ['"bad"', None]
+
+
+@pytest.mark.parametrize("prefix", [b"", b"\xef\xbb\xbf"])
+async def test_valid_surrogate_pair_and_utf8_bom_work_on_200_and_304(r2_runtime, monkeypatch, prefix):
+    r2 = r2_runtime
+    def handle(request):
+        if request.headers.get("if-none-match"):
+            return httpx.Response(304, headers={"ETag": '"v1"'})
+        return httpx.Response(200, content=prefix+br'{"v":"\ud83d\ude00"}', headers={"ETag": '"v1"'})
+    use_transport(monkeypatch, r2, handle)
+    assert await r2.fetch_json(PATH) == {"v": "\U0001f600"}
+    assert await r2.fetch_json(PATH) == {"v": "\U0001f600"}
+
+
+async def test_warm_entry_replaced_by_non_ascii_tag_is_not_kept(r2_runtime, monkeypatch):
+    r2 = r2_runtime
+    seen = []
+    def handle(request):
+        seen.append(request.headers.get("if-none-match"))
+        tag = b'"valid"' if len(seen) == 1 else b'"\xff"'
+        return httpx.Response(200, json={"v": len(seen)}, headers=[(b"etag", tag)])
+    use_transport(monkeypatch, r2, handle)
+    for n in range(1, 4):
+        assert await r2.fetch_json(PATH) == {"v": n}
+    assert seen == [None, '"valid"', None]

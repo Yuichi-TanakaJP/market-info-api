@@ -55,8 +55,25 @@ def _finite_float(value: str) -> float:
     return number
 
 
+def _validate_unicode(data: dict) -> None:
+    pending = [data]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, str):
+            value.encode("utf-8")  # rejects unpaired surrogates in values and keys
+        elif isinstance(value, dict):
+            pending.extend(value.keys())
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+
+
 def _parse_tdnet_body(body: bytes, url: str) -> dict:
-    return _object(json.loads(body, parse_constant=_reject_constant, parse_float=_finite_float), url)
+    # Published TDNET JSON is UTF-8; do not use json.loads(bytes)' surrogatepass.
+    text = body.decode("utf-8-sig")
+    data = _object(json.loads(text, parse_constant=_reject_constant, parse_float=_finite_float), url)
+    _validate_unicode(data)
+    return data
 
 
 async def _fetch_tdnet_json(path: str, url: str) -> dict:

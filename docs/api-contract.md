@@ -700,3 +700,5 @@ HTTP GETの弱いETag比較（`W/`と同じopaque tag）は許可し、304のETa
 追加受入: 200→304→200→304で上流本文が初回/変更時だけ転送されること、弱いETag/省略304、異常304、ETag欠落、保持上限/eviction、別origin、呼出側dict変更、同時要求、cancel後の破棄を検証する。実R2の条件付きGET確認は読取専用で行い、更新イベント自体は合成HTTP fixtureで再現する。
 
 JSONのNaN/Infinity/-Infinityやfloat範囲外の数値は200/保持本文の両方で拒否する。ETagはHTTPXのstr headerへ安全に転送できるASCIIだけを保持し、非ASCIIは有効な本文を返してもvalidator保持を省略する。保持上限はin-flight本文/parse領域を含まず、5秒のnetwork timeoutは同一object lockの待ち時間を含まない。
+
+公開JSONは厳密UTF-8（UTF-8 BOMは許容）でdecodeし、200と304再利用の両方で、文字列値/キー中の未対サロゲートを保持前に拒否する。有効なサロゲートペア（絵文字等）は許可する。
