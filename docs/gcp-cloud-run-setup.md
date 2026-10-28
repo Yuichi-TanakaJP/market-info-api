@@ -113,22 +113,42 @@ R2 credentials は対象 bucket の読み取り権限だけを持つ専用token�
 
 ---
 
-## ビルドの手動実行
+## ビルドと配信の確認
 
-1. Cloud Run サービス → **「トリガー」タブ** → **「build trigger」**
-2. トリガー一覧でトリガー右の **「▶ 実行」** をクリック
+通常はmain更新でCloud Buildを起動する。Actionsは手動実行のみ。
+Cloud Buildも止めるコミットのスキップ指定は使わない。
 
-または、`main` ブランチに push すると自動でビルドが走る。
+承認済みの配備前に対象merge SHA・旧revision・配信設定を控える。
+自動ビルドが起動しなかった場合だけ既存triggerを対象SHA固定で手動起動する。
+Build成功だけで完了にせず、revisionのcommit-sha・image digest・Ready・100%配信を検査する。
 
----
-
-## 動作確認
-
-```bash
-curl https://market-info-api-619599800912.asia-northeast1.run.app/health
-# → {"status": "ok"}
-
-curl https://market-info-api-619599800912.asia-northeast1.run.app/ranking/manifest
-curl https://market-info-api-619599800912.asia-northeast1.run.app/nikkei/manifest
-curl https://market-info-api-619599800912.asia-northeast1.run.app/yutai/manifest
+```powershell
+python scripts/verify_cloud_run_release.py --project market-info-api --region asia-northeast1 --service market-info-api --commit <merge-SHA> --digest <sha256:digest>
 ```
+
+検査は読取専用。不一致は非0終了。続けて /health と変更対象APIの実データを確認する。
+本番への人工的な更新や障害注入は不要。
+
+通常は最新Ready revisionへ100%配信する。手動切替やrollbackの固定指定は次の配備にも残る。
+本番操作の承認後、最新作成revisionが意図したSHA・digestでReadyであることと、
+並行した別配備がないことを確認してから追従設定へ戻し、検査を再実行する。
+
+```powershell
+gcloud run services update-traffic market-info-api --project market-info-api --region asia-northeast1 --to-latest
+```
+
+旧revisionは削除しない。不具合時は控えた旧revisionへ `--to-revisions <old-revision>=100`
+で戻しAPIを確認する。固定に戻るため次の配備で追従設定を再確認する。
+リポジトリ変更だけではCloud側の設定・triggerは変更されない。
+
+## ローカル検証とUAT
+
+```powershell
+python -m pytest tests/test_release_controls.py
+python -m ruff check .
+```
+
+main反映後はpush/PRでActionsが自動起動しないことを確認する。
+手動CIは必要な承認がある場合のみ実行し既存lint・test・import確認を照合する。
+Cloud Buildは次の承認済みmain更新で起動・対象SHA・配信先を確認する。
+確認のためだけに本番buildを起動しない。
