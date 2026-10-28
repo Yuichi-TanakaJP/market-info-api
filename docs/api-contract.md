@@ -640,3 +640,65 @@ Rollback consumer/API then producer, preserving old aliases and all snapshots/re
 ### 投資部門別売買の公開更新
 
 `/investor-flow/latest`, `/investor-flow/manifest`, `/investor-flow/analysis/latest`, `/investor-flow/analysis/manifest` はAPI内TTL30秒、HTTP no-store。R2への取得はno-cacheで再検証する。週指定snapshotの24時間TTLは維持する。失敗した再検証を古い値による成功に置き換えない。画面の60秒確認と合わせ、通常の公開完了から約90秒＋通信時間以内を更新目標とする（SLA実測ではない）。APIの再配備を通常更新の手順にしない。
+
+
+## TDNET可変データの鮮度と確認手順
+
+### 決定と境界（2026-10-28）
+
+10/27公開後、R2と日付指定APIは新しくても、`/tdnet/disclosures/latest` と `/disclosure-events/manifest` がAPIプロセスの6時間cacheに残った。再配備による解消を通常運用の前提にしないため、次の5経路は無検証のTTL cacheを利用しない。
+
+- `/tdnet/disclosures/latest`
+- `/tdnet/router-events/latest`、`/tdnet/router-events/manifest`
+- `/disclosure-events/latest`、`/disclosure-events/manifest`
+
+共通定義は `app/tdnet_cache_policy.py`。各要求でR2をGETし `Cache-Control: no-cache` を指定する。ETagと本文があれば `If-None-Match` を付け、上流304では保持本文を再利用、変更時の200だけで新しい全文とETagを保持する。APIの成功・既存エラー応答は `Cache-Control: no-store` とする。古いインプロセスentryが残っていても使用せず、上流失敗時に古い本文を返さない。HTTPエラー変換は既存契約を維持する。R2未反映・障害をAPIが新しい成功値として推測しない。
+
+正本と公開writerは従来どおりmarket_info/R2、APIはHTTP提供とcache方針、consumerは取得・表示を担当する。DB・認証境界・Local/Cloud配置・公開schemaは変更しない。Workspace Coreの既存全体設計（`docs/personal-system-architecture-context.md`）にある役割分担を維持する内部修正であり、新規DBや公開通知サービスは追加しない。
+
+日付指定3経路は24時間の不変cacheを維持する。複数R2 objectの公開は単一トランザクションではないため、公開途中の5経路を同一generationとして固定する保証は追加しない。公開完了後の次の要求が、その時点のR2 objectを反映する。既に開始済みの要求や、旧版が返したHTTP cacheが残る移行期間を遡って更新するものではない。開いた画面へのpush/自動ポーリング追加も本API修正の範囲外。
+
+TTL短縮だけでは期限内の古い本文が残るため、対象を5経路に絞り毎回再取得を選択した。共有httpx client/timeoutを再利用し、新規依存は追加しない。R2への確認GETと待ち時間は要求ごとに発生するが、変更なしの304ではJSON本文転送を省く。全APIのcacheを無効化しない。
+
+### ローカル受入確認
+
+```powershell
+python -m pytest tests/test_tdnet_freshness.py tests/test_tdnet_etag.py -q
+python -m pytest -q
+python -m ruff check .
+```
+
+実artifactと同じshapeのfixtureとHTTP MockTransportを使用し、APIと実際のcache/R2 client層を通す。実サイト取得・R2書込み・本番配備を行うテストではない。
+
+1. 同じAPIプロセスで旧JSONを取得後、R2応答を新JSONへ変更。待機・cache破棄・再起動なしで次の5経路要求が新JSONになる。
+2. 同じ対象日の本文またはmanifest生成日時だけを更新しても、次の要求で更新内容を返す。
+3. 成功後に404/503/timeout/不正JSON/非object応答へ変え、古い本文が返らず既存のHTTPエラーとno-storeになる。回復後の次要求は成功する。
+4. 上流GETは可変5objectだけno-cache、日付指定3経路は従来のcacheとHTTP方針を維持。
+5. 別API familyのcacheを無効化しないことを関連suiteで確認する。
+
+### 本番受入と切戻し
+
+配備前に明示承認を得る。本番では3dated/3latest/2manifestをR2のJSONと照合し、可変5応答のno-store、旧履歴不変、更新後の次要求を確認する。検証目的で本番R2を上書きしない。結果はPRに記録し、この手順へ実施済みチェックを埋め込まない。
+
+切戻しは旧API image/revisionへtrafficを戻す。データ移行はないが、旧6時間cacheの挙動へ戻る。再配備後に過去のブラウザーcacheを即時失効させる保証や、上流R2公開の巻戻しは含めない。
+
+
+### ETagによる条件付き本文再利用
+
+保持単位はR2の完全URL（originを含む）で、対象は可変5objectのみ。生JSON bytesとETagをプロセス内LRUへ合計8MiBまで保持する。304で再利用するたびに新しいdictへparseし、呼出側の変更を保持本文へ反映させない。TTLで再確認を省略しない。同一objectの取得は直列化し、先に完了した新しい状態を遅い要求が巻き戻す競合を避ける。
+
+| 上流応答 | APIの扱い |
+|---|---|
+| 初回200 / ETag変更で200 | JSON objectを検証して返し、ETagと本文を置換 |
+| 条件付きGETの304 | 今回の上流確認に成功した保持本文を再利用し、APIクライアントへ通常の200/JSONを返す |
+| 404/5xx/timeout/不正JSON/非object/不整合304 | 古い本文を成功として返さず、保持entryを破棄して既存エラー契約を返す |
+| ETagなし/不正、8MiB超 | 有効な200本文は返すが保持せず、次回は無条件GET。304だけでは復旧させない |
+| LRU eviction後 | 本文がないため無条件GET。有効なETag/上限内の200本文を再保持する |
+
+HTTP GETの弱いETag比較（`W/`と同じopaque tag）は許可し、304のETag省略も許可する。304に異なるETagが付いた場合や、保持本文なしの304、部分応答206はエラーにする。取得失敗/取得処理中cancel後の次要求は無条件GETから再開する。shutdownでclient/保持本文/lockを破棄する。
+
+追加受入: 200→304→200→304で上流本文が初回/変更時だけ転送されること、弱いETag/省略304、異常304、ETag欠落、保持上限/eviction、別origin、呼出側dict変更、同時要求、cancel後の破棄を検証する。実R2の条件付きGET確認は読取専用で行い、更新イベント自体は合成HTTP fixtureで再現する。
+
+JSONのNaN/Infinity/-Infinityやfloat範囲外の数値は200/保持本文の両方で拒否する。ETagはHTTPXのstr headerへ安全に転送できるASCIIだけを保持し、非ASCIIは有効な本文を返してもvalidator保持を省略する。保持上限はin-flight本文/parse領域を含まず、5秒のnetwork timeoutは同一object lockの待ち時間を含まない。
+
+公開JSONは厳密UTF-8（UTF-8 BOMは許容）でdecodeし、200と304再利用の両方で、文字列値/キー中の未対サロゲートを保持前に拒否する。有効なサロゲートペア（絵文字等）は許可する。

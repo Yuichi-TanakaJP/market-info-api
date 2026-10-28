@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
 from app import cache, r2
+from app.tdnet_cache_policy import TDNET_HTTP_CACHE_CONTROL
 
 
 router = APIRouter(prefix="/tdnet/router-events", tags=["tdnet-router-events"])
@@ -80,7 +81,7 @@ class TdnetRouterEventsManifest(BaseModel):
 
 @router.get("/latest", response_model=TdnetRouterEventsPayload)
 async def get_latest(response: Response) -> dict:
-    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
+    response.headers["Cache-Control"] = TDNET_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/latest",
@@ -98,7 +99,7 @@ async def get_latest(response: Response) -> dict:
 
 @router.get("/manifest", response_model=TdnetRouterEventsManifest)
 async def get_manifest(response: Response) -> dict:
-    response.headers["Cache-Control"] = cache.MUTABLE_HTTP_CACHE_CONTROL
+    response.headers["Cache-Control"] = TDNET_HTTP_CACHE_CONTROL
     try:
         return await cache.get_manifest(
             f"{_PREFIX}/manifest",

@@ -869,7 +869,7 @@ Cache headers:
 - `GET /disclosure-events/{date}`:
   `Cache-Control: public, max-age=31536000, immutable`
 - `GET /disclosure-events/manifest` and `GET /disclosure-events/latest`:
-  `Cache-Control: public, max-age=300`
+  `Cache-Control: no-store`
 
 日付別レスポンスは不変のため、ブラウザやCDNが長期再利用できる。manifestは短期確認し、
 新しく追加された日付だけを取得する。
@@ -910,7 +910,8 @@ GET /market-calendar/us-closed
 
 | 種別 | TTL | 対象の例 |
 |------|-----|---------|
-| manifest / latest 系（下記例外を除く） | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
+| TDNET関連のlatest / manifest | ETag条件付き確認・HTTP no-store | `/tdnet/disclosures/latest`, `/tdnet/router-events/latest`, `/tdnet/router-events/manifest`, `/disclosure-events/latest`, `/disclosure-events/manifest` |
+| manifest / latest 系（例外を除く） | 6時間 | `/econ-calendar/weekly`, `*/manifest`, `*/latest` |
 | 投資部門別 raw/analysis latest・manifest | 30秒 | HTTP no-store、R2再検証 |
 | EDINET Filing Index v2 | 6時間 | `/edinet/filing-index/v2/{date}` を含む |
 | EDINET Large Holding compact v1 | 6時間 | `/edinet/large-holding/v1/{date}` を含む |
@@ -990,7 +991,7 @@ Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` th
 
 `null` source date is an expected supported state. Show save date, collection time and generation time separately. Read `latest_market_observation` only as the latest confirmed market date, never as confirmation of another acquisition.
 
-国内ランキング/TOPIX33/寄与度: manifestは30秒、日次本文は不変snapshot単位24時間。date URL自体は可変なのでHTTP no-store。他の6時間TTLは従来どおり。
+国内ランキング/TOPIX33/寄与度: manifestは30秒、日次本文は不変snapshot単位24時間。date URL自体は可変なのでHTTP no-store。TDNET可変5経路は後述の毎回再確認を使い、それ以外の6時間TTLは従来どおり。
 
 
 ### 投資部門別売買の公開更新
@@ -998,3 +999,16 @@ Use the existing `/ranking/manifest`, `/nikkei/manifest`, `/topix33/manifest` th
 `/investor-flow/latest`, `/investor-flow/manifest`, `/investor-flow/analysis/latest`, `/investor-flow/analysis/manifest` はAPI内TTL30秒、HTTP no-store。R2への取得はno-cacheで再検証する。週指定snapshotの24時間TTLは維持する。失敗した再検証を古い値による成功に置き換えない。画面の60秒確認と合わせ、通常の公開完了から約90秒＋通信時間以内を更新目標とする（SLA実測ではない）。APIの再配備を通常更新の手順にしない。
 
 優待株価 `/yutai/stock-prices/latest` のAPI内TTLは30秒。認証とprivate, no-storeは維持し、他の優待endpointのTTLは変更しない。
+
+
+### TDNETの公開更新と取得確認
+
+TDNET可変5経路は無検証のTTL待機を行わず、毎回R2へのGETに `Cache-Control: no-cache` を指定する。ETagと本文があれば `If-None-Match` を送り、304では保持本文を再利用、200で変更時だけ本文とETagを置換する。API応答には `Cache-Control: no-store` を付ける。公開がR2へ反映された後の次のAPI要求で新しい内容を取得する。API再配備や利用者の強制再読み込みによるcache破棄は不要。既に描画済みの画面へのpush通知を追加する仕様ではない。
+
+日付指定3経路は既存の24時間不変cacheを維持。正常取得後に上流404/5xx/timeout/不正JSONとなった場合も、古いlatest/manifestへfallbackせず既存のHTTPエラー契約で返す。回復後の次の要求で再取得する。
+
+検証手順と採用理由は [API Contract: TDNET可変データ](api-contract.md#tdnet可変データの鮮度と確認手順) を参照。
+
+ETag/本文はプロセス内に合計8MiBのLRU上限で保持する。ETagなし・不正・本文が上限超過・eviction後は無条件GETする。304なのに本文がない/ETag矛盾の場合はエラー、取得失敗時は該当保持本文を破棄し、次回は無条件GETする。APIクライアントへは304を透過せず、上流確認済み本文を通常の200/JSONとして返す。
+
+非ASCII ETagは条件付き取得へ転送せず、次回も無条件GETする。NaN/Infinity等の非標準JSON数値は拒否して保持entryを破棄する。

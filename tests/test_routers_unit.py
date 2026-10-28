@@ -1029,7 +1029,7 @@ def test_disclosure_events_latest_accepts_real_shape(client):
 
     assert resp.status_code == 200
     assert resp.json()["items"][0]["event_type"] == "yutai_end"
-    assert resp.headers["cache-control"] == "public, max-age=300"
+    assert resp.headers["cache-control"] == "no-store"
 
 
 def test_disclosure_events_manifest_accepts_real_shape(client):
@@ -1045,7 +1045,7 @@ def test_disclosure_events_manifest_accepts_real_shape(client):
 
     assert resp.status_code == 200
     assert resp.json()["latest"] == "2026-06-12"
-    assert resp.headers["cache-control"] == "public, max-age=300"
+    assert resp.headers["cache-control"] == "no-store"
 
 
 def test_disclosure_events_by_date(client):

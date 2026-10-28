@@ -1,0 +1,19 @@
+{
+  "schema_version": "tdnet-router-events-v1",
+  "target_date": "2026-06-12",
+  "total_count": 1,
+  "items": [
+    {
+      "router_event_id": "fixture-router-event",
+      "tdnet_disclosure_id": "140120260612000001",
+      "source": "tdnet",
+      "event_type": "dividend_change",
+      "disclosure_date": "2026-06-12",
+      "disclosure_time": "15:00",
+      "security_code": "00000",
+      "title": "テスト配当予想の修正",
+      "disclosure_category": "その他",
+      "source_url": "https://example.test/notice.pdf"
+    }
+  ]
+}

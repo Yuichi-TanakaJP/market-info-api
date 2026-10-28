@@ -45,6 +45,7 @@
 #### キャッシュ
 - TTL 値は `app/cache.py` の `_MANIFEST_TTL`（21600秒=6時間）/ `_DAY_TTL`（86400秒=24時間）で一元管理する
 - 国内3種の可変manifestと投資部門別売買のraw/analysis latest・manifestは `_OBSERVATION_MANIFEST_TTL`（30秒）を使う。router で直接数値を書かない
+- TDNET関連の可変5経路は `app/tdnet_cache_policy.py` を正とし、無検証のTTL cacheを使わずETagで毎回R2へ条件付き再確認（304時だけ保持本文を再利用）、HTTP `no-store`。日付指定は既存の不変cacheを維持する。
 
 #### テスト
 - router unit test は `tests/fixtures/` の実 artifact shape（real_shape）を使う回帰ケースを必ず含める
