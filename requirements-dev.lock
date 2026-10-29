@@ -23,7 +23,7 @@ build==1.5.0
     # via pip-tools
 cachetools==7.1.7
     # via market-info-api (pyproject.toml)
-certifi==2026.7.22
+certifi==2026.10.23
     # via
     #   httpcore
     #   httpx
