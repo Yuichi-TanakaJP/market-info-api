@@ -1012,3 +1012,30 @@ TDNET可変5経路は無検証のTTL待機を行わず、毎回R2へのGETに `C
 ETag/本文はプロセス内に合計8MiBのLRU上限で保持する。ETagなし・不正・本文が上限超過・eviction後は無条件GETする。304なのに本文がない/ETag矛盾の場合はエラー、取得失敗時は該当保持本文を破棄し、次回は無条件GETする。APIクライアントへは304を透過せず、上流確認済み本文を通常の200/JSONとして返す。
 
 非ASCII ETagは条件付き取得へ転送せず、次回も無条件GETする。NaN/Infinity等の非標準JSON数値は拒否して保持entryを破棄する。
+
+## Private daily credit inventory
+
+```sh
+curl --get "$API_BASE/private/credit-inventory/history" \
+  --header "Authorization: Bearer $CREDIT_HISTORY_API_KEY" \
+  --data-urlencode 'broker=smbc_nikko' --data-urlencode 'codes=2730,367A' \
+  --data-urlencode 'start=2026-09-01' --data-urlencode 'end=2026-09-30'
+```
+
+Repeat the identical request with `cursor=<next_cursor>` until `complete=true`
+and `next_cursor=null`. Never treat an intermediate page as all observations.
+The JSON envelope has schema=`credit-inventory-history-page-v1`, generation,
+broker,codes,start,end,page_month,observations,missing_months,complete,next_cursor,
+live_executability_confirmed=false. Each observation contains code,observed_date,
+observed_at (+09:00),source_sha256,source_snapshot_id,
+collection_completeness=not_attested and source-native record (or null for a
+missing code). Example Nikko record quantity is available_shares=0 with raw="0";
+quantity null means unknown. SBI records keep position status/product flags and
+raw upper limit independently; available_shares stays null.
+
+Bounds: at most20 unique codes,367 inclusive dates,one source month and100 rows
+or256KiB per response. Missing days are absent; missing_months identifies months
+with no shared artifact. `complete` never attests full source collection.
+Cache: private,no-store; no monthly body cache. Authentication, private-bucket
+configuration and live source rights must be verified before rollout. See the
+private-history contract and `/docs` response models for full field definitions.

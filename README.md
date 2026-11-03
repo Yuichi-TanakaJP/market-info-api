@@ -200,3 +200,10 @@ curl "http://localhost:8000/references/industries/1"
 TTL 設計ルールの詳細は [`docs/api-contract.md`](docs/api-contract.md) を参照。
 
 `/references` は manifest が 6 時間の server cache、generation index / detail が 24 時間の内部 cache、公開 HTTP は `max-age=300`。
+
+Private inventory history: `GET /private/credit-inventory/history` extracts
+explicit broker/codes/start/end requests with generation-pinned pagination.
+Requires dedicated `CREDIT_HISTORY_API_KEY` and `CREDIT_HISTORY_PRIVATE_*`
+storage settings; absent settings fail closed. Existing public credit endpoints
+are unchanged. Implementation is not production/source-rights acceptance.
+See [contract](docs/api-contract.md#private-credit-history).
