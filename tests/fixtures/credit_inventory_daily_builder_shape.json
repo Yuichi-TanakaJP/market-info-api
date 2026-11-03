@@ -1,0 +1,108 @@
+{
+  "schema": "credit-inventory-daily-v1",
+  "broker": "smbc_nikko",
+  "month": "2026-09",
+  "selection_rule": "last_source_snapshot_per_jst_day",
+  "source_snapshot_count": 4,
+  "selected_snapshot_count": 4,
+  "observed_dates": [
+    "2026-09-01",
+    "2026-09-08",
+    "2026-09-15",
+    "2026-09-22"
+  ],
+  "snapshots": [
+    {
+      "observed_date": "2026-09-01",
+      "observed_at": "2026-09-01T09:00:00+09:00",
+      "source_sha256": "d639ec8bb70401c7afb60a0003d4af0b1874debb873d9d043395668644434c3d",
+      "source_snapshot_id": "smbc_nikko:2026-09-01T09:00:00+09:00:d639ec8bb70401c7afb60a0003d4af0b1874debb873d9d043395668644434c3d",
+      "collection_completeness": "not_attested",
+      "record_count": 1,
+      "by_code": {
+        "2730": {
+          "available_shares": 500,
+          "available_shares_raw": "500",
+          "general_short": true,
+          "general_buy": null,
+          "institutional_short": null,
+          "institutional_buy": null,
+          "has_exchange_regulation": null,
+          "has_internal_regulation": null,
+          "regulation_fetch_status": "unknown_legacy",
+          "regulation_sources_raw": null,
+          "regulation_details_raw": null
+        }
+      }
+    },
+    {
+      "observed_date": "2026-09-08",
+      "observed_at": "2026-09-08T09:00:00+09:00",
+      "source_sha256": "5073d34a47bbd3da6d0f9dba15e88eb04cf3171bf055a4914bc83e9f708ec954",
+      "source_snapshot_id": "smbc_nikko:2026-09-08T09:00:00+09:00:5073d34a47bbd3da6d0f9dba15e88eb04cf3171bf055a4914bc83e9f708ec954",
+      "collection_completeness": "not_attested",
+      "record_count": 1,
+      "by_code": {
+        "2730": {
+          "available_shares": 0,
+          "available_shares_raw": "0",
+          "general_short": true,
+          "general_buy": null,
+          "institutional_short": null,
+          "institutional_buy": null,
+          "has_exchange_regulation": null,
+          "has_internal_regulation": null,
+          "regulation_fetch_status": "unknown_legacy",
+          "regulation_sources_raw": null,
+          "regulation_details_raw": null
+        }
+      }
+    },
+    {
+      "observed_date": "2026-09-15",
+      "observed_at": "2026-09-15T09:00:00+09:00",
+      "source_sha256": "eb8eefa03860dfe0863660d857aafc8d48e84abfc7aafb475f4602bb95606206",
+      "source_snapshot_id": "smbc_nikko:2026-09-15T09:00:00+09:00:eb8eefa03860dfe0863660d857aafc8d48e84abfc7aafb475f4602bb95606206",
+      "collection_completeness": "not_attested",
+      "record_count": 1,
+      "by_code": {
+        "2730": {
+          "available_shares": null,
+          "available_shares_raw": "-",
+          "general_short": true,
+          "general_buy": null,
+          "institutional_short": null,
+          "institutional_buy": null,
+          "has_exchange_regulation": null,
+          "has_internal_regulation": null,
+          "regulation_fetch_status": "unknown_legacy",
+          "regulation_sources_raw": null,
+          "regulation_details_raw": null
+        }
+      }
+    },
+    {
+      "observed_date": "2026-09-22",
+      "observed_at": "2026-09-22T09:00:00+09:00",
+      "source_sha256": "a97432cb0d924fe7c29e59c8c0167433bb8ad3674729f82bfab415e77621b90f",
+      "source_snapshot_id": "smbc_nikko:2026-09-22T09:00:00+09:00:a97432cb0d924fe7c29e59c8c0167433bb8ad3674729f82bfab415e77621b90f",
+      "collection_completeness": "not_attested",
+      "record_count": 1,
+      "by_code": {
+        "2730": {
+          "available_shares": 1200,
+          "available_shares_raw": "1200",
+          "general_short": true,
+          "general_buy": null,
+          "institutional_short": null,
+          "institutional_buy": null,
+          "has_exchange_regulation": null,
+          "has_internal_regulation": null,
+          "regulation_fetch_status": "unknown_legacy",
+          "regulation_sources_raw": null,
+          "regulation_details_raw": null
+        }
+      }
+    }
+  ]
+}
