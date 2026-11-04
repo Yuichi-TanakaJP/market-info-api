@@ -84,6 +84,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/edinet/filing-index/v2/*` | market_info publish時 | 過去日も取下げ・書類情報修正・開示状態変更で再publishされ得る。datedも6時間の可変cache |
 | `/edinet/large-holding/v1/*` | market_info compact publish時 | 大量保有compact。過去日も訂正・取下げ等で再publishされ得るためdatedも6時間の可変cache |
 | `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
+| `/private/tdnet/dividend-sources/*` | 明示的private publish時 | 銘柄別manifest／digest固定document。サーバーcacheなし・private,no-store |
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
@@ -754,3 +755,55 @@ Acceptance is one code's CSV→artifact→authenticated API→Stock Notes persis
 observation→consultation read, matching source SHA/dates/zero/null/restock and
 idempotent replay. Local synthetic tests alone do not establish production
 acceptance or source-use rights.
+
+
+## Private TDNET dividend source delivery
+
+The dedicated `DIVIDEND_SOURCE_API_KEY` is a single Stock Notes backend credential,
+not a per-user ownership token. Missing configuration returns503, invalid/missing
+Bearer returns401 before any private storage read. Dedicated
+`DIVIDEND_SOURCE_PRIVATE_*` storage settings have no public or other-product
+fallback. Code is a selection filter, not an authorization claim. Do not expose
+this backend credential in browsers. Multi-tenant use is not supported.
+
+The four-character uppercase/alphanumeric security code selects
+`tdnet/dividend-source/v1/by-code/{code}/manifest.json`. The reader validates strict
+`tdnet-dividend-private-manifest-v1` fields, code, unique ordered entries (1–20),
+source hashes and official dates, then requires byte-identical content at
+`manifests/{manifest_sha256}.json`. Manifest limit is256KiB. Each authorized
+artifact is limited to32MiB and selected by disclosure ID and exact SHA, never a
+caller-controlled object key/URL. The reader verifies stored length, SHA, raw
+issuer (`code + 0`), official date/ID, extraction status and source input hashes.
+Full financial semantics remain the Stock Notes strict consumer's responsibility.
+
+Both endpoints return exact stored JSON bytes with `X-Content-SHA256`; no JSON
+reserialization and no process retention cache. Successful responses and handled authentication, validation, and storage errors
+from these endpoints use `Cache-Control: private, no-store`. Private reads
+are serialized per API process to bound simultaneous artifact allocations.
+
+404 means the code is not saved or a requested artifact is not shared for that
+code; it is never a zero dividend or evidence of full source coverage.503 means
+unconfigured/unavailable/invalid private storage, identity or digest. A missing
+immutable snapshot/document referenced by an existing manifest is503. Partial,
+ambiguous/conflict/unsupported extraction status is preserved, not promoted to
+Canonical acceptance. API calls never trigger official acquisition or DB writes.
+Existing public TDNET contracts remain unchanged.
+
+The initial delivery profile does not retain raw official attachments in R2.
+The reader rejects `raw_retention=retained_private` and non-null
+`private_evidence_key` rather than presenting local packet-relative files as
+cloud-backed offline evidence. Source input hash lists are sorted/unique and
+limited to200; a disclosure ID cannot claim conflicting official dates in the
+same manifest. These checks do not replace full Stock source-contract validation.
+
+Private SDK read concurrency is capped by an in-thread nonblocking semaphore;
+a cancelled HTTP caller cannot release the worker's slot while its SDK call is
+still active. Busy readers fail503 without opening another connection. SDK retries
+are disabled for this path. Body reads use one-byte chunks with elapsed checks
+before/after each byte against a30-second budget (including SDK setup/header
+receipt in elapsed accounting), plus5-second connect/10-second socket inactivity
+timeouts. These are not a hard process-level wall-clock kill switch for header
+receipt; a thread can outlive cancellation until its I/O terminates. It keeps the
+single worker slot while it does so, preventing unbounded abandoned readers.
+Large artifacts can fail the elapsed budget safely rather than hold resources.
+

@@ -1039,3 +1039,37 @@ with no shared artifact. `complete` never attests full source collection.
 Cache: private,no-store; no monthly body cache. Authentication, private-bucket
 configuration and live source rights must be verified before rollout. See the
 private-history contract and `/docs` response models for full field definitions.
+
+## 保存済み配当sourceを銘柄指定で読む
+
+Stock Notesバックエンド専用Bearerでmanifestを取得し、各entryのID/SHAで
+artifactを別途取得する。例の銘柄1234はsynthetic例で、本番保存済みとは限らない。
+
+```bash
+curl --fail -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" \
+  "$BASE_URL/private/tdnet/dividend-sources/1234"
+curl --fail -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" \
+  "$BASE_URL/private/tdnet/dividend-sources/1234/documents/$DISCLOSURE_ID/$ARTIFACT_SHA256"
+```
+
+Manifestのshape（source hash・artifact hashはそれぞれ実際の64桁SHA）：
+
+```json
+{
+  "schema": "tdnet-dividend-private-manifest-v1",
+  "security_code": "1234",
+  "entries": [{
+    "disclosure_id": "140120261007123456",
+    "disclosure_date": "2026-10-07",
+    "artifact_sha256": "<exact artifact SHA-256>",
+    "artifact_bytes": 12345,
+    "extraction_status": "partial",
+    "source_input_sha256": ["<raw source SHA-256>"]
+  }]
+}
+```
+
+レスポンスbodyは保存時のexact JSON bytes。`X-Content-SHA256`と照合し、
+artifactはmanifest entryのSHA/byte数とも照合して既存strict consumerへ渡す。
+private,no-store、サーバー保持cacheなし。未保存銘柄は404、未設定・破損等は503。
+periodやCanonical配当値を推定せず、partialをそのまま扱う。

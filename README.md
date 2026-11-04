@@ -17,6 +17,8 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | エンドポイント | 概要 |
 |----------------|------|
 | `GET /health` | ヘルスチェック |
+| `GET /private/tdnet/dividend-sources/{security_code}` | 認証付き・銘柄別の保存済み配当source manifest |
+| `GET /private/tdnet/dividend-sources/{security_code}/documents/{disclosure_id}/{artifact_sha256}` | manifestに含まれるexact-byte配当source artifact |
 | `GET /ranking/manifest` | 株価ランキング manifest |
 | `GET /ranking/{date}` | 指定日のランキング JSON |
 | `GET /ranking/range?from={date}&to={date}` | 期間内のランキング JSON |
@@ -207,3 +209,5 @@ Requires dedicated `CREDIT_HISTORY_API_KEY` and `CREDIT_HISTORY_PRIVATE_*`
 storage settings; absent settings fail closed. Existing public credit endpoints
 are unchanged. Implementation is not production/source-rights acceptance.
 See [contract](docs/api-contract.md#private-credit-history).
+
+Private配当sourceの設定は .env.example の DIVIDEND_SOURCE_API_KEY / DIVIDEND_SOURCE_PRIVATE_* を参照。未設定は503で拒否し、公開R2や別用途の認証へfallbackしない。保存済みデータのreadのみで、公式取得やCanonical書込は行わない。
