@@ -806,4 +806,3 @@ timeouts. These are not a hard process-level wall-clock kill switch for header
 receipt; a thread can outlive cancellation until its I/O terminates. It keeps the
 single worker slot while it does so, preventing unbounded abandoned readers.
 Large artifacts can fail the elapsed budget safely rather than hold resources.
-
