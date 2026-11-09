@@ -1,0 +1,110 @@
+{
+  "schema_version": "yutai-comparison-observations-v1",
+  "mode": "local_pilot",
+  "generated_at": "2026-11-03T00:00:00Z",
+  "jpx_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "universe_count": 4444,
+  "record_count": 4,
+  "unobserved_count": 4440,
+  "coverage": "partial",
+  "records": [
+    {
+      "code": "1000",
+      "status": "changed_text",
+      "old": {
+        "url": "https://example.invalid/source/1000",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fetched_at": "2026-11-01T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-old"
+      },
+      "new": {
+        "url": "https://example.invalid/source/1000",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "fetched_at": "2026-11-02T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-new"
+      },
+      "scope": "page_text",
+      "extractor_version": "synthetic-v1",
+      "old_text_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "new_text_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "reason": "Synthetic observation preserving producer wire shape",
+      "review_status": "pending",
+      "assessment_updated": false,
+      "byte_equal": false
+    },
+    {
+      "code": "1001",
+      "status": "fetch_failed",
+      "old": {
+        "url": "https://example.invalid/source/1001",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fetched_at": "2026-11-01T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-old"
+      },
+      "new": null,
+      "scope": "none",
+      "extractor_version": null,
+      "old_text_sha256": null,
+      "new_text_sha256": null,
+      "reason": "Synthetic observation preserving producer wire shape",
+      "review_status": "pending",
+      "assessment_updated": false,
+      "byte_equal": null
+    },
+    {
+      "code": "1002",
+      "status": "unchanged_text",
+      "old": {
+        "url": "https://example.invalid/source/1002",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fetched_at": "2026-11-01T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-old"
+      },
+      "new": {
+        "url": "https://example.invalid/source/1002",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fetched_at": "2026-11-02T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-new"
+      },
+      "scope": "page_text",
+      "extractor_version": "synthetic-v1",
+      "old_text_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "new_text_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "reason": "Synthetic observation preserving producer wire shape",
+      "review_status": "pending",
+      "assessment_updated": false,
+      "byte_equal": true
+    },
+    {
+      "code": "1003",
+      "status": "not_comparable",
+      "old": {
+        "url": "https://example.invalid/source/1003",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fetched_at": "2026-11-01T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-old"
+      },
+      "new": {
+        "url": "https://example.invalid/source/1003",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "fetched_at": "2026-11-02T00:00:00Z",
+        "content_bytes": 100,
+        "archive_run_id": "synthetic-run-new"
+      },
+      "scope": "none",
+      "extractor_version": null,
+      "old_text_sha256": null,
+      "new_text_sha256": null,
+      "reason": "Synthetic observation preserving producer wire shape",
+      "review_status": "pending",
+      "assessment_updated": false,
+      "byte_equal": false
+    }
+  ]
+}

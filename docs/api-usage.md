@@ -1073,3 +1073,22 @@ Manifestのshape（source hash・artifact hashはそれぞれ実際の64桁SHA�
 artifactはmanifest entryのSHA/byte数とも照合して既存strict consumerへ渡す。
 private,no-store、サーバー保持cacheなし。未保存銘柄は404、未設定・破損等は503。
 periodやCanonical配当値を推定せず、partialをそのまま扱う。
+
+## Private yutai comparison history
+
+Use a producer-provided receipt digest; there is no list/current or acquisition-triggering endpoint. Keep the bearer token on the backend.
+
+```bash
+curl -H "Authorization: Bearer $YUTAI_COMPARISON_API_KEY" \
+  "$BASE_URL/private/yutai/comparisons/receipts/$RECEIPT_SHA256"
+curl -H "Authorization: Bearer $YUTAI_COMPARISON_API_KEY" \
+  "$BASE_URL/private/yutai/comparisons/receipts/$RECEIPT_SHA256/report"
+```
+
+Receipt shape (digest/byte values depend on the exact saved JSON):
+
+```json
+{"schema_version":"yutai-comparison-history-receipt-v1","mode":"pending_comparison_history","report_key":"yutai/source-audit/v1/comparisons/objects/<sha256>.json","report_sha256":"<sha256>","report_bytes":25548,"jpx_sha256":"<sha256>","generated_at":"2026-11-08T08:05:20Z","universe_count":4444,"record_count":22,"unobserved_count":4422,"coverage":"partial","raw_retention":"not_uploaded_local_assets_required","assessment_updated":false}
+```
+
+Report uses `yutai-comparison-observations-v1` with `mode=local_pilot` and full `records` including code/status, old/new source references, extraction scope/version/digests, reason and pending review flags. `/docs` response schemas specify the full nullable shape. The regression fixture `tests/fixtures/yutai_comparison_real_shape_synthetic.json` preserves the actual producer artifact shape with synthetic values. Read errors never indicate no benefit. No production endpoint/configuration is implied merely by this source addition.
