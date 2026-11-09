@@ -84,6 +84,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/edinet/filing-index/v2/*` | market_info publish時 | 過去日も取下げ・書類情報修正・開示状態変更で再publishされ得る。datedも6時間の可変cache |
 | `/edinet/large-holding/v1/*` | market_info compact publish時 | 大量保有compact。過去日も訂正・取下げ等で再publishされ得るためdatedも6時間の可変cache |
 | `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
+| `/private/yutai/comparisons/receipts/*` | 明示的private履歴保存時 | SHA固定receiptと参照report。サーバーcacheなし・private,no-store |
 | `/private/tdnet/dividend-sources/*` | 明示的private publish時 | 銘柄別manifest／digest固定document。サーバーcacheなし・private,no-store |
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
@@ -806,3 +807,15 @@ timeouts. These are not a hard process-level wall-clock kill switch for header
 receipt; a thread can outlive cancellation until its I/O terminates. It keeps the
 single worker slot while it does so, preventing unbounded abandoned readers.
 Large artifacts can fail the elapsed budget safely rather than hold resources.
+
+## Private yutai comparison history
+
+These read-only endpoints return the exact stored UTF-8 JSON after SHA/schema validation. The receipt endpoint reads at most 4KiB; the report endpoint reads one receipt plus its report (max4MiB). No cache/listing/latest inference, source acquisition, raw HTML/PDF delivery, canonical acceptance or personal data writes. The caller obtains the receipt digest from the producer's save result; this increment is not a searchable benefit catalog.
+
+Dedicated bearer key is mandatory. Missing configured key ->503; missing/invalid bearer ->401; invalid digest ->400; unknown receipt (`NoSuchKey` only) ->404. A missing referenced report, digest/schema/summary mismatch, provider denial or timeout ->503, never empty success. Endpoint responses and framework404/405/redirect responses under this prefix are `private,no-store`. An unhandled server exception outside the handlers is not covered by this middleware guarantee. Return `X-Content-SHA256` on success; report bytes must match the receipt SHA/size, JPX snapshot hash, generated instant and coverage counts. No arbitrary R2 path is accepted.
+
+`coverage` is row coverage, not completed official review. `pending` and `assessment_updated=false` are preserved. Sources remain local (`not_uploaded_local_assets_required`); this does not promise replayable Cloud originals. Same-URL text matching cannot prove benefit conditions unchanged. Wire models mirror market_info's comparison-observations-v1 and immutable history receipt.
+
+Each admitted private read runs storage I/O and JSON/schema validation in a killable subprocess. One request is admitted per API process; busy requests fail503 rather than queueing SDK jobs. A dedicated supervisor thread uses subprocess.run/communicate with a30-second deadline over headers, body and parsing; timeout kills, drains stdout and reaps before releasing admission. A cancelled HTTP request does not cancel supervision: the slot remains held until completion/deadline, including repeated cancellation. Subprocess creation uses the operating system spawn mechanism; the deadline does not promise to preempt an OS spawn that itself stalls. This protects the main API event loop from slow headers or expensive validation. No new dependency or persistent worker is added.
+
+Decode strictly as UTF-8; require explicit v1 schema/mode and pending markers. Wire timestamps must be timezone date-time strings with at most6 fractional digits, matching the producer microsecond precision; numeric/quoted epoch and excess precision are rejected. Before JSON graph allocation, cap nesting at24, container count40000, string-token count200000, unquoted value/key separators200000 and individual raw string length8192. Require at most10000 report rows and validate each row fail-first. These read-side limits may reject future large/multi-source reports even under4MiB; partition/version the producer before expansion. SDK requests also use5-second connect/10-second blocked-read timeouts and no retries, with bounded closed streams. Dedicated storage endpoints must be HTTPS without credentials/query/fragment. Privacy/IAM and deployed integration remain separate approval gates.
