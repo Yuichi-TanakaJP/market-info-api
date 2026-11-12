@@ -1092,3 +1092,11 @@ Receipt shape (digest/byte values depend on the exact saved JSON):
 ```
 
 Report uses `yutai-comparison-observations-v1` with `mode=local_pilot` and full `records` including code/status, old/new source references, extraction scope/version/digests, reason and pending review flags. `/docs` response schemas specify the full nullable shape. The regression fixture `tests/fixtures/yutai_comparison_real_shape_synthetic.json` preserves the actual producer artifact shape with synthetic values. Read errors never indicate no benefit. No production endpoint/configuration is implied merely by this source addition.
+
+## Reviewed Yutai V2 source
+
+`GET /private/yutai/normalized/releases/{sha256}/records/2027-03/1234` with `Authorization: Bearer <dedicated-key>`. Response: `schema_version=yutai-normalized-read-v1`, `release_sha256`, `month`, `code`, `record_sha256`, full V2 `record` (see OpenAPI). X-Content-SHA256 binds exact response bytes. Use explicit month/code; no local file/API acquisition fallback.
+
+```sh
+curl -H "Authorization: Bearer $YUTAI_NORMALIZED_API_KEY" "$API/private/yutai/normalized/releases/$RELEASE_SHA/records/2027-03/1234"
+```
