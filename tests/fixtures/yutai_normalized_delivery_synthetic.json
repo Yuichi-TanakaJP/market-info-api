@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "code": "1234",
+  "company_name": "Synthetic Conditions Company",
+  "as_of_date": "2026-11-13",
+  "source_evidence": [{"source_url": "https://example.invalid/ir/benefit.pdf", "archive_status": "saved", "archive_run_id": "synthetic-run", "fetched_at": "2026-11-13T00:00:00Z", "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],
+  "normalization_status": "reviewed",
+  "programs": [{
+    "program_id": "synthetic-initial-202703", "label": "Initial grant only",
+    "rights_months": [3], "effective_from": "2027-03-31", "effective_to": "2027-03-31",
+    "grant_frequency": "annual",
+    "record_date_rules": [{"month": 3, "grant_mode": "regular", "continuity_observation": true}, {"month": 9, "grant_mode": "none", "continuity_observation": true}],
+    "tiers": [{
+      "minimum_shares": 100, "required_holding_months": 12,
+      "continuity_requirement": {"required_consecutive_observations": 3, "same_shareholder_number_required": true, "continuous_holding_required": null, "minimum_shares_each_observation": 100, "minimum_shares_at_qualification": null, "notes": "2026-03-31, 2026-09-30, 2027-03-31; synthetic"},
+      "groups": [{"mode": "all", "items": [{"label": "Synthetic voucher", "kind": "money_voucher", "official_value_yen": 2000, "valuation_policy": "face_value"}]}]
+    }]
+  }]
+}

@@ -217,3 +217,5 @@ Private配当sourceの設定は .env.example の DIVIDEND_SOURCE_API_KEY / DIVID
 ### Private yutai comparison history
 
 `YUTAI_COMPARISON_API_KEY` and `YUTAI_COMPARISON_PRIVATE_{BUCKET,ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY,REGION}` are dedicated settings. Missing auth/storage fails closed; no public/other-feature fallback. Use server-side credentials only. Provisioning and production deployment require separate approval.
+
+Reviewed source-only Yutai V2: `GET /private/yutai/normalized/releases/{sha256}/records/{YYYY-MM}/{code}` (dedicated Bearer auth, private/no-store; 404=not saved).
