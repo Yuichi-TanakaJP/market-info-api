@@ -1127,3 +1127,14 @@ curl -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" "$API/private/tdnet/sou
 ```
 
 TTLはなし、private,no-store。code/id/SHAは利用者が明示指定します。contentはJSONではなく検証済みZIP/PDFバイナリです。
+
+
+### Resolve a retained original from its official URL
+
+Compute `OFFICIAL_URL_SHA256` as lowercase SHA-256 of the exact ASCII official URL from the candidate inventory (not the fallback retrieval URL). Then:
+
+```sh
+curl -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" "$API/private/tdnet/source-originals/1234/140120261115123456/references/$OFFICIAL_URL_SHA256"
+```
+
+The JSON response has the exact original metadata shape shown above. Its `X-Content-SHA256` response header is the record digest: use it as `RECORD_SHA256` in the existing metadata and `/content` URLs. Verify the body digest, issuer/disclosure and original URL before parsing. An absent reference returns 404 (pending collection, not no dividend); a reference whose committed metadata is missing or different returns 503. All successful/error responses are private/no-store. This operation never fetches a source document or modifies storage.

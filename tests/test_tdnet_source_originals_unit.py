@@ -203,3 +203,106 @@ def test_saved_record_missing_raw_is_unavailable(saved):
         response = client.get(path + "/content", headers=AUTH)
         assert response.status_code == 503
         assert response.headers["cache-control"] == "private, no-store"
+
+
+def reference_path(saved):
+    data, body, _, _, objects, _ = saved
+    url_sha = digest(data["official_url"].encode("ascii"))
+    prefix = f"{mod.PREFIX}/by-code/1234/documents/{data['disclosure_id']}"
+    key = f"{prefix}/references/{url_sha}.json"
+    objects[key] = body
+    return (
+        f"/private/tdnet/source-originals/1234/{data['disclosure_id']}/references/{url_sha}",
+        key,
+    )
+
+
+def test_reference_resolves_complete_shape_and_pinned_record(saved):
+    path, key = reference_path(saved)
+    with TestClient(app) as client:
+        response = client.get(path, headers=AUTH)
+    assert response.status_code == 200
+    assert response.content == saved[1]
+    assert response.headers["x-content-sha256"] == digest(saved[1])
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["content-disposition"].startswith("attachment;")
+    assert len(saved[-1]) == 2
+    assert saved[-1][0] == (key, mod.MAX_RECORD_BYTES)
+    assert saved[-1][1][0].endswith(digest(saved[1]) + ".json")
+
+
+def test_reference_auth_precedes_selector_and_storage(saved):
+    with TestClient(app) as client:
+        path = "/private/tdnet/source-originals/bad/bad/references/bad"
+        assert client.get(path).status_code == 401
+        assert client.get(path, headers=AUTH).status_code == 400
+    assert saved[-1] == []
+
+
+def test_reference_missing_is_pending_not_absent_disclosure(saved):
+    path, key = reference_path(saved)
+    del saved[4][key]
+    with TestClient(app) as client:
+        assert client.get(path, headers=AUTH).status_code == 404
+    assert len(saved[-1]) == 1
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        "noncanonical",
+        "wrong_issuer",
+        "wrong_id",
+        "wrong_url",
+        "oversize",
+        "missing_pinned",
+        "different_pinned",
+    ],
+)
+def test_reference_rejects_corrupt_or_uncommitted_metadata(saved, corruption):
+    path, key = reference_path(saved)
+    data, body, _, _, objects, reads = saved
+    pinned_key = next(iter(objects))
+    if corruption == "noncanonical":
+        objects[key] = body + b" "
+    elif corruption == "wrong_issuer":
+        objects[key] = canonical_bytes(data | {"security_code": "9999"})
+    elif corruption == "wrong_id":
+        objects[key] = canonical_bytes(data | {"disclosure_id": "140120261115999999"})
+    elif corruption == "wrong_url":
+        objects[key] = canonical_bytes(
+            data | {"official_url": data["official_url"].replace(".zip", ".zip?")}
+        )
+    elif corruption == "oversize":
+        objects[key] = b"x" * (mod.MAX_RECORD_BYTES + 1)
+    elif corruption == "missing_pinned":
+        del objects[pinned_key]
+    else:
+        objects[pinned_key] = b"{}"
+    with TestClient(app) as client:
+        assert client.get(path, headers=AUTH).status_code == 503
+    assert len(reads) == (2 if corruption.endswith("pinned") else 1)
+
+
+def test_reference_rejects_valid_record_at_other_url_hash(saved):
+    path, key = reference_path(saved)
+    bad_sha = "a" * 64
+    objects = saved[4]
+    objects[key.replace(key.rsplit("/", 1)[1], bad_sha + ".json")] = saved[1]
+    with TestClient(app) as client:
+        assert (
+            client.get(path.rsplit("/", 1)[0] + "/" + bad_sha, headers=AUTH).status_code
+            == 503
+        )
+    assert len(saved[-1]) == 1
+
+
+@pytest.mark.asyncio
+async def test_reference_cancellation_propagates(saved, monkeypatch):
+    async def cancelled(*args):
+        raise asyncio.CancelledError()
+
+    monkeypatch.setattr(mod.storage, "read_bytes", cancelled)
+    with pytest.raises(asyncio.CancelledError):
+        await mod.reference("1234", saved[0]["disclosure_id"], "a" * 64)

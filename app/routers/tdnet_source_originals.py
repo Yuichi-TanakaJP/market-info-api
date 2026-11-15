@@ -14,6 +14,7 @@ from app.tdnet_source_original import (
     MAX_RECORD_BYTES,
     PREFIX,
     SourceOriginal,
+    digest,
     parse_record,
     validate_content,
 )
@@ -98,3 +99,58 @@ async def metadata(security_code: str, disclosure_id: str, record_sha256: str):
 async def content(security_code: str, disclosure_id: str, record_sha256: str):
     """Authorize via exact pinned metadata, then verify raw SHA, length and magic."""
     return await _read(security_code, disclosure_id, record_sha256, content=True)
+
+
+@router.get(
+    "/{security_code}/{disclosure_id}/references/{official_url_sha256}",
+    dependencies=[Depends(require_key)],
+    response_model=SourceOriginal,
+    summary="Resolve an immutable original by its official URL hash",
+)
+async def reference(security_code: str, disclosure_id: str, official_url_sha256: str):
+    """Resolve only a committed original; no discovery, source fetching or writes.
+
+    A missing reference is pending, not proof that the disclosure has no data.
+    The exact metadata bytes are returned with their record digest, which the
+    consumer must pin for the existing metadata/content reads.
+    """
+    selector(security_code, disclosure_id, official_url_sha256)
+    async with _gate:
+        reference_loaded = False
+        try:
+            body = await storage.read_bytes(
+                f"{PREFIX}/by-code/{security_code}/documents/{disclosure_id}"
+                f"/references/{official_url_sha256}.json",
+                MAX_RECORD_BYTES,
+            )
+            reference_loaded = True
+            sha = digest(body)
+            record = parse_record(body, security_code, disclosure_id, sha)
+            if digest(record.official_url.encode("ascii")) != official_url_sha256:
+                raise ValueError("reference official URL mismatch")
+            pinned = await storage.read_bytes(
+                f"{PREFIX}/by-code/{security_code}/documents/{disclosure_id}/{sha}.json",
+                MAX_RECORD_BYTES,
+            )
+            if pinned != body:
+                raise ValueError("reference pinned metadata mismatch")
+            return Response(
+                body,
+                media_type="application/json",
+                headers=_HEADERS
+                | {
+                    "X-Content-SHA256": sha,
+                    "Content-Disposition": f'attachment; filename="{disclosure_id}-{sha}.json"',
+                },
+            )
+        except ClientError as exc:
+            if (
+                exc.response.get("Error", {}).get("Code") == "NoSuchKey"
+                and not reference_loaded
+            ):
+                raise error(404, "original reference is not saved") from exc
+            raise error(503, "saved original reference unavailable") from exc
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise error(503, "saved original reference unavailable or invalid") from exc
