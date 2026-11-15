@@ -41,7 +41,7 @@ def saved(monkeypatch):
     objects = {key: body, model.raw_key: raw}
     reads = []
 
-    async def read(key, limit):
+    async def read(key, limit, *, available_chunks=False):
         reads.append((key, limit))
         if key not in objects:
             raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
@@ -306,3 +306,39 @@ async def test_reference_cancellation_propagates(saved, monkeypatch):
     monkeypatch.setattr(mod.storage, "read_bytes", cancelled)
     with pytest.raises(asyncio.CancelledError):
         await mod.reference("1234", saved[0]["disclosure_id"], "a" * 64)
+
+
+def test_only_original_content_opts_into_available_byte_reads(saved, monkeypatch):
+    original = mod.storage.read_bytes
+    modes = []
+
+    async def observed(key, limit, *, available_chunks=False):
+        modes.append(available_chunks)
+        return await original(key, limit, available_chunks=available_chunks)
+
+    monkeypatch.setattr(mod.storage, "read_bytes", observed)
+    with TestClient(app) as client:
+        assert client.get(saved[3], headers=AUTH).status_code == 200
+        assert client.get(saved[3] + "/content", headers=AUTH).status_code == 200
+    assert modes == [False, False, True]
+
+
+def test_fast_content_read_still_requires_exact_pinned_sha(saved, monkeypatch):
+    data, _, raw, path, objects, _ = saved
+    key = next(key for key in objects if "/objects/" in key)
+    # Same length and valid ZIP magic: only the pinned digest distinguishes it.
+    objects[key] = raw[:-1] + bytes([raw[-1] ^ 1])
+    assert len(objects[key]) == len(raw) and objects[key].startswith(b"PK\x03\x04")
+    original = mod.storage.read_bytes
+    fast_reads = []
+
+    async def observed(key, limit, *, available_chunks=False):
+        if available_chunks:
+            fast_reads.append(key)
+        return await original(key, limit, available_chunks=available_chunks)
+
+    monkeypatch.setattr(mod.storage, "read_bytes", observed)
+    with TestClient(app) as client:
+        response = client.get(path + "/content", headers=AUTH)
+    assert response.status_code == 503
+    assert fast_reads == [key]
