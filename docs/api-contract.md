@@ -86,6 +86,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/tdnet/disclosures/*` | 平日 1日1回 | TDNET 全適時開示一覧。PDF は再配信せず原文 URL を返す |
 | `/private/yutai/comparisons/receipts/*` | 明示的private履歴保存時 | SHA固定receiptと参照report。サーバーcacheなし・private,no-store |
 | `/private/tdnet/dividend-sources/*` | 明示的private publish時 | 銘柄別manifest／digest固定document。サーバーcacheなし・private,no-store |
+| `/private/tdnet/source-originals/*` | 明示的private publish時 | digest固定原本record/content。cacheなし・private,no-store |
 | `/disclosure-events/*` | 平日 1日1回 | 保存済みTDNET一覧から生成した優待変更・マイ銘柄向けイベント |
 | `/sbi/credit/*` | 週次 | SBI 信用残高更新に合わせて publish |
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
@@ -823,3 +824,7 @@ Decode strictly as UTF-8; require explicit v1 schema/mode and pending markers. W
 ## Reviewed normalized Yutai source (2026-11-13)
 
 Update unit is an immutable explicitly pinned release, no TTL/current inference. GET `/private/yutai/normalized/releases/{release_sha256}/records/{month}/{code}` reads reviewed V2, retains exact conditions and unknowns. 404=not saved in a partial release, never no benefit. 400 invalid selector, 401 auth rejected, 503 unconfigured/corrupt/unavailable/contended. Dedicated `YUTAI_NORMALIZED_API_KEY` and `YUTAI_NORMALIZED_PRIVATE_*` settings; no common/public fallback. Max release4MiB/response1MiB, isolated supervised reader hard timeout30s. Source-only; no Stock Notes canonical acceptance. New route unconfigured fails closed. Rollback consumer digest/deployment, never replace immutable history.
+
+## Private TDnet original archive
+
+既存 `DIVIDEND_SOURCE_API_KEY` と `DIVIDEND_SOURCE_PRIVATE_*` の認証・保存先を再利用します。この鍵の読取範囲に保存済みZIP/PDF原本が追加されます。新しい資格情報・公式サイト取得・writer・一覧探索は追加しません。明示されたcode/id/record SHAだけを読みます。recordは最大16KiBの厳格canonical JSON。contentはZIP4MiB/PDF8MiB以下でSHA・長さ・magicを検証します。取得の真正性や財務内容の検証ではありません。認証をselector検証とstorageより先に行い、401は認証不一致、400はselector不正、404はrecord未保存、503は認証未設定・読取不能・破損（record保存済みで原本blob欠落も含む）です。すべてprivate,no-store。成功応答はattachment/nosniff、record/content各digestはX-Content-SHA256、contentはX-Source-Record-SHA256も返します。既存source V1と別prefix tdnet/source-original/v1、mutable latestやmanifestはありません。

@@ -20,6 +20,8 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /private/yutai/comparisons/receipts/{receipt_sha256}` | 認証付き・保存済み優待比較履歴receipt（digest固定） |
 | `GET /private/yutai/comparisons/receipts/{receipt_sha256}/report` | receiptが参照するpending比較JSON。取得・採用・書込みなし |
 | `GET /private/tdnet/dividend-sources/{security_code}` | 認証付き・銘柄別の保存済み配当source manifest |
+| `GET /private/tdnet/source-originals/{security_code}/{disclosure_id}/{record_sha256}` | 認証付き・保存済み原本メタデータ |
+| 同経路 `/content` | SHA・長さ・magic照合済みZIP/PDF原本 |
 | `GET /private/tdnet/dividend-sources/{security_code}/documents/{disclosure_id}/{artifact_sha256}` | manifestに含まれるexact-byte配当source artifact |
 | `GET /ranking/manifest` | 株価ランキング manifest |
 | `GET /ranking/{date}` | 指定日のランキング JSON |
