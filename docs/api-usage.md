@@ -1100,3 +1100,30 @@ Report uses `yutai-comparison-observations-v1` with `mode=local_pilot` and full 
 ```sh
 curl -H "Authorization: Bearer $YUTAI_NORMALIZED_API_KEY" "$API/private/yutai/normalized/releases/$RELEASE_SHA/records/2027-03/1234"
 ```
+
+## 保存済みTDnet原本（Private）
+
+```sh
+curl -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" "$API/private/tdnet/source-originals/1234/140120261115123456/$RECORD_SHA256"
+curl -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" "$API/private/tdnet/source-originals/1234/140120261115123456/$RECORD_SHA256/content" -o original.zip
+```
+
+応答例（合成例。digestは実際の原本から計算します）：
+
+```json
+{
+  "schema_version": "tdnet-source-original-v1",
+  "security_code": "1234",
+  "disclosure_id": "140120261115123456",
+  "disclosure_date": "2026-11-15",
+  "source_kind": "xbrl_zip",
+  "official_url": "https://www.release.tdnet.info/inbs/140120261115654321.zip",
+  "retrieved_url": "https://www2.jpx.co.jp/disc/12340/140120261115654321.zip",
+  "retrieved_at": "2026-11-15T12:00:00+09:00",
+  "content_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "byte_length": 8,
+  "media_type": "application/zip"
+}
+```
+
+TTLはなし、private,no-store。code/id/SHAは利用者が明示指定します。contentはJSONではなく検証済みZIP/PDFバイナリです。
