@@ -56,7 +56,9 @@ async def _read(code, disclosure_id, sha, content=False):
             }
             media = "application/json"
             if content:
-                body = await storage.read_bytes(record.raw_key, record.content_limit)
+                body = await storage.read_bytes(
+                    record.raw_key, record.content_limit, available_chunks=True
+                )
                 validate_content(body, record)
                 extension = "zip" if record.source_kind == "xbrl_zip" else "pdf"
                 headers |= {
