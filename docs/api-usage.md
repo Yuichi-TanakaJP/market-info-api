@@ -1138,3 +1138,18 @@ curl -H "Authorization: Bearer $DIVIDEND_SOURCE_API_KEY" "$API/private/tdnet/sou
 ```
 
 The JSON response has the exact original metadata shape shown above. Its `X-Content-SHA256` response header is the record digest: use it as `RECORD_SHA256` in the existing metadata and `/content` URLs. Verify the body digest, issuer/disclosure and original URL before parsing. An absent reference returns 404 (pending collection, not no dividend); a reference whose committed metadata is missing or different returns 503. All successful/error responses are private/no-store. This operation never fetches a source document or modifies storage.
+
+
+## TDnet訂正日の読取り
+
+```bash
+curl -i "$BASE_URL/tdnet/disclosures/2026-11-16"
+# 訂正がある場合: Cache-Control: no-store
+# Content-Location: /tdnet/disclosures/2026-11-16?revision=<release SHA256>
+curl -i "$BASE_URL/tdnet/disclosures/2026-11-16?revision=<Content-LocationのSHA256>"
+```
+
+同じrevisionを`/disclosure-events/{date}`と`/tdnet/router-events/{date}`にも指定できる。
+JSON本体は各エンドポイントの通常形式のまま。現在の公開indexにないrevisionは404。
+修復中・照合失敗の503を「開示0件」と扱わず、後で再取得する。
+訂正のない日付のcacheは従来通り。旧URLを既に保存するブラウザーのcache失効を保証しない。

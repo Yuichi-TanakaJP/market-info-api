@@ -140,7 +140,12 @@ async def fetch_json(path: str) -> dict:
     """
     url = f"{R2_PUBLIC_BASE_URL}/{path}"
     if path in TDNET_MUTABLE_OBJECTS:
-        return await _fetch_tdnet_json(path, url)
+        from app import tdnet_corrections
+
+        before = await tdnet_corrections.guard_index()
+        result = await _fetch_tdnet_json(path, url)
+        await tdnet_corrections.confirm_index(before)
+        return result
     mutable = path in {"stock-ranking/manifest.json", "topix33/topix33_manifest.json", "nikkei-contribution/nikkei_contribution_manifest.json", "investor-flow/manifest.json", "investor-flow/latest.json", "investor-flow-analysis/manifest.json", "investor-flow-analysis/latest.json"}
     resp = await get_client().get(url, headers={"Cache-Control": "no-cache"} if mutable else {})
     resp.raise_for_status()
