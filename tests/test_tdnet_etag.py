@@ -12,6 +12,16 @@ PATH = "tdnet/disclosures/latest.json"
 @pytest.fixture()
 async def r2_runtime(monkeypatch):
     monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.test")
+    # This suite isolates the legacy contract with no corrections. Real index
+    # transport/fences and malformed indexes are exercised in test_tdnet_corrections.
+    from app import tdnet_corrections
+    from unittest.mock import AsyncMock
+
+    monkeypatch.setattr(tdnet_corrections, "load_index", AsyncMock(return_value={
+        "schema_version": "tdnet-correction-index-v1", "revisions": {}, "pending": None,
+    }))
+
+    monkeypatch.setenv("R2_PUBLIC_BASE_URL", "https://r2.example.test")
     from app import r2
 
     monkeypatch.setattr(r2, "R2_PUBLIC_BASE_URL", "https://r2.example.test")

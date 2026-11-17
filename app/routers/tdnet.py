@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import re
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
-from app import cache, r2
+from app import cache, r2, tdnet_corrections
 
-router = APIRouter(prefix="/tdnet", tags=["tdnet"])
+router = APIRouter(responses={503: {"description": "TDnet repair pending or correction evidence unavailable"}}, prefix="/tdnet", tags=["tdnet"])
 
 _PREFIX = "tdnet/disclosures"
 _DATE_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
@@ -64,6 +64,8 @@ async def get_disclosures_latest() -> dict:
             f"{_PREFIX}/latest",
             lambda: r2.fetch_json(f"{_PREFIX}/latest.json"),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status == 404:
@@ -80,19 +82,24 @@ async def get_disclosures_latest() -> dict:
         502: {"description": "R2 からの取得失敗"},
     },
 )
-async def get_disclosures_by_date(date: str) -> dict:
+async def get_disclosures_by_date(date: str, response: Response, revision: str | None = None) -> dict:
     """YYYY-MM-DD 形式の日付に対応する TDNET 全適時開示一覧を返す。
 
     404 の場合: 指定日のデータが存在しない（未取得日・未来日・publish 未実行日など）。
-    422 の場合: date が YYYY-MM-DD 形式でない。キャッシュ TTL: 24時間（不変）。
+    422 の場合: date / revision が形式不正。通常日付は既存の不変cacheを使用。
+    訂正日付は別のSHA固定原本を返し、revision省略時はno-store。
+    Content-Locationのrevision URLは不変。revisionはrelease SHA256で、当日の公開indexと一致が必要。
+    訂正作業中または証拠を照合できない場合は503となり、旧キャッシュへ戻らない。
     """
     if not _DATE_RE.match(date):
         raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD format")
     try:
-        return await cache.get_day(
-            f"{_PREFIX}/{date}",
-            lambda: r2.fetch_json(f"{_PREFIX}/{date}.json"),
+        return await tdnet_corrections.day(
+            "tdnet", date, revision, response, f"/{_PREFIX}/{date}",
+            f"{_PREFIX}/{date}", lambda: r2.fetch_json(f"{_PREFIX}/{date}.json"),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status == 404:

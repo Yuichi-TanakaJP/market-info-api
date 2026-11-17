@@ -845,3 +845,26 @@ Original reads still enforce the30s elapsed budget before and after every chunk,
 
 
 The available-byte path bypasses the SDK wrapper's byte counter and any `StreamingChecksumBody` read-time checksum validation. The route therefore retains its independent exact length check and must validate the metadata-pinned SHA-256 and file magic before returning any content. It does not rely on an S3 response checksum or treat transport success as integrity success. `decode_content=False` preserves encoded wire bytes without allocating their decompressed form; bytes differing from the retained original fail the pinned content check.
+
+
+## TDnet確定日データの訂正リビジョン
+
+`/tdnet/disclosures/{date}`、`/disclosure-events/{date}`、`/tdnet/router-events/{date}`
+は通常日のJSONと既存cache契約を維持する。訂正日は公開R2の
+`tdnet/corrections/v1/index.json`を毎回`Cache-Control: no-cache`で確認し、
+release SHA256が固定する別の原本を読む。元の日付付きR2オブジェクトは変更しない。
+訂正日の省略URLは`no-store`で、`Content-Location`が示す
+`?revision=<release SHA256>` URLのみ不変cacheを許可する。レスポンスJSONと既存manifestのshapeは変更しない。
+未知・別日・現在のindexと異なるrevisionは404、SHA形式不正は422。
+
+indexが404の場合だけ訂正なしとして既存経路を使う。indexの不正・取得失敗、releaseまたは
+4原本（一覧・イベント・router・intent）の欠落・SHA/対象日/shape/件数/intent不一致は
+503・no-storeで停止し、旧データや空データへfallbackしない。indexは64KiB・最大500日、
+releaseは16KiB、各原本は16MiB以内。検証済み不変原本のcacheはSHA単位・合計32MiB上限。
+
+indexの`pending`がある間は、共有公開をまたぐ混在を防ぐためTDnetの可変5経路
+（一覧latest、イベントlatest/manifest、router latest/manifest）と修復対象日の読取を503にする。
+他の日付は利用可能。読取前後のindex照合で修復の開始・公開切替をまたいだ応答も停止する。
+indexは公開物の参照契約であり、原資料の真正性そのものをSHAだけで証明するものではない。
+すでにブラウザー・外部proxyが保持する旧日付URLの全cacheを消去する機能はない。
+利用側は訂正応答の`Content-Location`を使用する。

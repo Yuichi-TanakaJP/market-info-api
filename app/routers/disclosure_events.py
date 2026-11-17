@@ -6,10 +6,10 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, ConfigDict
 
-from app import cache, r2
+from app import cache, r2, tdnet_corrections
 from app.tdnet_cache_policy import TDNET_HTTP_CACHE_CONTROL
 
-router = APIRouter(prefix="/disclosure-events", tags=["disclosure-events"])
+router = APIRouter(responses={503: {"description": "TDnet repair pending or correction evidence unavailable"}}, prefix="/disclosure-events", tags=["disclosure-events"])
 
 _PREFIX = "disclosure-events"
 _DATE_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
@@ -64,6 +64,8 @@ async def get_latest(response: Response) -> dict:
             f"{_PREFIX}/latest",
             lambda: r2.fetch_json(f"{_PREFIX}/latest.json"),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status == 404:
@@ -83,21 +85,29 @@ async def get_manifest(response: Response) -> dict:
             f"{_PREFIX}/manifest",
             lambda: r2.fetch_json(f"{_PREFIX}/manifest.json"),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.get("/{date}", response_model=DisclosureEventsPayload)
-async def get_by_date(date: str, response: Response) -> dict:
-    """指定日の正規化済み開示イベントを返す。キャッシュTTL: 24時間。"""
+async def get_by_date(date: str, response: Response, revision: str | None = None) -> dict:
+    """指定日データ。通常は不変cache、訂正日はSHA固定原本を読む。
+
+    訂正日はrevision省略でno-store、Content-Locationのrelease SHA URLで不変cache。
+    revision不一致は404、形式不正は422。修復中・訂正照合失敗は503、旧データへ戻らない。
+    """
     if not _DATE_RE.match(date):
         raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD format")
     response.headers["Cache-Control"] = cache.IMMUTABLE_HTTP_CACHE_CONTROL
     try:
-        return await cache.get_day(
-            f"{_PREFIX}/{date}",
-            lambda: r2.fetch_json(f"{_PREFIX}/{date}.json"),
+        return await tdnet_corrections.day(
+            "events", date, revision, response, f"/{_PREFIX}/{date}",
+            f"{_PREFIX}/{date}", lambda: r2.fetch_json(f"{_PREFIX}/{date}.json"),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status == 404:
