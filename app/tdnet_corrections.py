@@ -210,7 +210,10 @@ async def _release(revision, day):
     if (
         release["schema_version"] != "tdnet-correction-release-v1"
         or release["target_date"] != day
-        or release["reason"] != "premature_empty_day"
+        or (
+            release["reason"] != "premature_empty_day"
+            and (day, release["reason"]) != ("2026-11-13", "historical_pagination_gap")
+        )
     ):
         raise ValueError("release binding mismatch")
     for key in ("supersedes", "documents"):
