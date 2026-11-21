@@ -17,6 +17,7 @@ from app.routers import (
     earnings_calendar,
     econ_calendar,
     edinet,
+    edinet_financials,
     health,
     investor_flow,
     jpx_listed_companies,
@@ -118,7 +119,7 @@ app = FastAPI(
 @app.middleware("http")
 async def observation_cache_headers(request, call_next):
     response = await call_next(request)
-    if request.url.path in {"/private/yutai/comparisons", "/private/yutai/normalized"} or request.url.path.startswith(("/private/credit-inventory/", "/private/tdnet/dividend-sources/", "/private/tdnet/source-originals/", "/private/yutai/comparisons/", "/private/yutai/normalized/")):
+    if request.url.path in {"/private/yutai/comparisons", "/private/yutai/normalized"} or request.url.path.startswith(("/private/credit-inventory/", "/private/tdnet/dividend-sources/", "/private/tdnet/source-originals/", "/private/edinet/financials/", "/private/yutai/comparisons/", "/private/yutai/normalized/")):
         response.headers["Cache-Control"] = "private, no-store"
     parts = request.url.path.strip("/").split("/")
     if len(parts) == 2 and parts[0] in {"ranking", "topix33", "nikkei"}:
@@ -146,6 +147,7 @@ app.include_router(stock_master.router)
 app.include_router(market_rankings.router)
 app.include_router(us_ranking.router)
 app.include_router(edinet.router)
+app.include_router(edinet_financials.router)
 app.include_router(econ_calendar.router)
 app.include_router(tdnet.router)
 app.include_router(tdnet_router_events.router)

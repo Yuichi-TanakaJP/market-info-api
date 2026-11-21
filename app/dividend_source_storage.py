@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
+import re
 import threading
 import time
 
@@ -12,6 +13,7 @@ from app import config
 # An asyncio request lock cannot protect a to_thread worker after its caller is
 # cancelled. Hold this process-local slot inside the worker until all I/O closes.
 _READ_SLOT = threading.BoundedSemaphore(1)
+_EDINET_READ_SLOT = threading.BoundedSemaphore(1)
 READ_BUDGET_SECONDS = 30
 AVAILABLE_CHUNK_BYTES = 64 * 1024
 
@@ -48,21 +50,28 @@ def _available_reader(stream):
     return None
 
 
-def _read_claimed(key: str, limit: int, *, available_chunks: bool = False) -> bytes:
+def _read_claimed(
+    key: str, limit: int, *, available_chunks: bool = False,
+    private_config: tuple[dict[str, str], str] | None = None,
+) -> bytes:
     started = time.monotonic()
     import boto3
     from botocore.config import Config
 
     names = ("BUCKET", "ENDPOINT", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY")
-    values = {n: getattr(config, f"DIVIDEND_SOURCE_PRIVATE_{n}") for n in names}
+    if private_config is None:
+        values = {n: getattr(config, f"DIVIDEND_SOURCE_PRIVATE_{n}") for n in names}
+        region = config.DIVIDEND_SOURCE_PRIVATE_REGION
+    else:
+        values, region = private_config
     if not all(values.values()):
-        raise RuntimeError("private dividend storage is not configured")
+        raise RuntimeError("private storage is not configured")
     client = boto3.client(
         "s3",
         endpoint_url=values["ENDPOINT"],
         aws_access_key_id=values["ACCESS_KEY_ID"],
         aws_secret_access_key=values["SECRET_ACCESS_KEY"],
-        region_name=config.DIVIDEND_SOURCE_PRIVATE_REGION,
+        region_name=region,
         config=Config(
             connect_timeout=5,
             read_timeout=10,
@@ -107,3 +116,25 @@ async def read_bytes(key: str, limit: int, *, available_chunks: bool = False) ->
     return await asyncio.to_thread(
         partial(_read_sync, key, limit, available_chunks=available_chunks)
     )
+
+
+def _read_edinet_sync(key: str, limit: int) -> bytes:
+    if not _EDINET_READ_SLOT.acquire(blocking=False):
+        raise RuntimeError("private EDINET reader is busy")
+    try:
+        endpoint = config.EDINET_FINANCIAL_PRIVATE_ENDPOINT
+        if not re.fullmatch(r"https://[a-f0-9]{32}(?:\.(?:eu|fedramp|us))?\.r2\.cloudflarestorage\.com", endpoint):
+            raise ValueError("invalid EDINET R2 endpoint")
+        values = {
+            "BUCKET": "mini-tools-private",
+            "ENDPOINT": endpoint,
+            "ACCESS_KEY_ID": config.EDINET_FINANCIAL_PRIVATE_ACCESS_KEY_ID,
+            "SECRET_ACCESS_KEY": config.EDINET_FINANCIAL_PRIVATE_SECRET_ACCESS_KEY,
+        }
+        return _read_claimed(key, limit, available_chunks=True, private_config=(values, "auto"))
+    finally:
+        _EDINET_READ_SLOT.release()
+
+
+async def read_edinet_bytes(key: str, limit: int) -> bytes:
+    return await asyncio.to_thread(_read_edinet_sync, key, limit)

@@ -1153,3 +1153,14 @@ curl -i "$BASE_URL/tdnet/disclosures/2026-11-16?revision=<Content-LocationのSHA
 JSON本体は各エンドポイントの通常形式のまま。現在の公開indexにないrevisionは404。
 修復中・照合失敗の503を「開示0件」と扱わず、後で再取得する。
 訂正のない日付のcacheは従来通り。旧URLを既に保存するブラウザーのcache失効を保証しない。
+
+### 版指定のEDINET財務JSON
+
+認証済みのサーバーから、Producerの成果物参照にある生バイトのSHA-256を指定する。
+
+~~~sh
+curl -H "Authorization: Bearer ${EDINET_FINANCIAL_API_KEY}" \
+  "${MARKET_INFO_API_URL}/private/edinet/financials/S100T65I/${ARTIFACT_SHA256}"
+~~~
+
+200はProducerの期間統合済みcompact JSONをそのまま返す。主な項目は schema_version、doc_id、filing_period_start、filing_period_end、fact_count、facts、type1_source_zip_sha256。X-Content-SHA256はレスポンスの生バイトに対応する。銘柄や会計年度から版を探す索引が必要な場合は、別途保存・配信契約を整備する。

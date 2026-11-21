@@ -868,3 +868,10 @@ indexの`pending`がある間は、共有公開をまたぐ混在を防ぐため
 indexは公開物の参照契約であり、原資料の真正性そのものをSHAだけで証明するものではない。
 すでにブラウザー・外部proxyが保持する旧日付URLの全cacheを消去する機能はない。
 利用側は訂正応答の`Content-Location`を使用する。
+
+### 非公開EDINET財務の更新単位
+| エンドポイント | 更新単位 | キャッシュ |
+|---|---|---|
+| `/private/edinet/financials/{doc_id}/{artifact_sha256}` | 不変。Market Infoの期間統合済み成果物から版を選択 | HTTP private, no-store |
+
+専用Bearerを使用。EDINET_FINANCIAL_API_KEY、EDINET_FINANCIAL_PRIVATE_ENDPOINT、EDINET_FINANCIAL_PRIVATE_ACCESS_KEY_ID、EDINET_FINANCIAL_PRIVATE_SECRET_ACCESS_KEY をサーバー側に設定する。R2認証は mini-tools-private のObject Read onlyを使用する。入力はdocIDとSHA-256のみ。400は入力不正、401は認証不正、404は指定版不在またはdocID不一致、503は未設定・上流障害・検証失敗。404は該当年度の財務データが存在しないことを意味しない。
