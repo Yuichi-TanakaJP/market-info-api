@@ -849,6 +849,8 @@ The available-byte path bypasses the SDK wrapper's byte counter and any `Streami
 
 ## TDnet確定日データの訂正リビジョン
 
+2026-11-13のページ欠落訂正は `historical_pagination_gap` を使う。既存の確定日訂正と同じ公開キー・検証・レスポンス形式で提供し、この理由は11月13日だけ受理する。
+
 `/tdnet/disclosures/{date}`、`/disclosure-events/{date}`、`/tdnet/router-events/{date}`
 は通常日のJSONと既存cache契約を維持する。訂正日は公開R2の
 `tdnet/corrections/v1/index.json`を毎回`Cache-Control: no-cache`で確認し、

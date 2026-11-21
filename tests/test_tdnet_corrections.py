@@ -344,3 +344,32 @@ def test_strict_utf8_json_byte_parser_rejects_unknown_or_nonportable_values(
     _, corrections, *_ = runtime
     with pytest.raises((ValueError, UnicodeError)):
         corrections._parse(bad)
+
+
+@pytest.mark.parametrize("target,status", [("2026-11-13", 200), (DAY, 503)])
+def test_pagination_gap_revision_is_specific_to_nov13(runtime, target, status):
+    client, corrections, _, objects, docs, release, index, _, _ = runtime
+    converted = {
+        family: json.loads(json.dumps(body).replace(DAY, target))
+        for family, body in docs.items()
+    }
+    converted["intent"]["semantic_digests"] = {
+        family: corrections.semantic_digest(family, body)
+        for family, body in converted.items()
+        if family != "intent"
+    }
+    release.update(
+        reason="historical_pagination_gap",
+        target_date=target,
+        documents={family: digest(body) for family, body in converted.items()},
+    )
+    revision = digest(release)
+    index["revisions"] = {target: revision}
+    objects[corrections.INDEX_KEY] = encoded(index)
+    objects[f"{corrections.PREFIX}/releases/{revision}.json"] = encoded(release)
+    for body in converted.values():
+        objects[f"{corrections.PREFIX}/documents/{digest(body)}.json"] = encoded(body)
+    response = client.get(f"/tdnet/disclosures/{target}")
+    assert response.status_code == status
+    if status == 200:
+        assert response.json() == converted["tdnet"]
