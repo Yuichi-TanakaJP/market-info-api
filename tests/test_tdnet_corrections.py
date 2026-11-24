@@ -347,7 +347,7 @@ def test_strict_utf8_json_byte_parser_rejects_unknown_or_nonportable_values(
 
 
 @pytest.mark.parametrize("target,status", [("2026-11-13", 200), (DAY, 503)])
-def test_pagination_gap_revision_is_specific_to_nov13(runtime, target, status):
+def test_pagination_gap_revision_nov13_and_unapproved_day(runtime, target, status):
     client, corrections, _, objects, docs, release, index, _, _ = runtime
     converted = {
         family: json.loads(json.dumps(body).replace(DAY, target))
@@ -373,3 +373,99 @@ def test_pagination_gap_revision_is_specific_to_nov13(runtime, target, status):
     assert response.status_code == status
     if status == 200:
         assert response.json() == converted["tdnet"]
+
+
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "valid",
+        "short_pages",
+        "short_count",
+        "missing_pdf",
+        "wrong_issuer",
+        "wrong_reason",
+    ],
+)
+def test_nov12_pagination_requires_complete_reviewed_inventory(runtime, variant):
+    client, corrections, cache, objects, docs, release, index, _, _ = runtime
+    target = "2026-11-12"
+    actual_pdfs = [
+        ("39790", "140120261111574498"),
+        ("44840", "140120261111573095"),
+        ("63300", "140120261110571395"),
+        ("75670", "140120261111574580"),
+        ("75670", "140120261111574574"),
+    ]
+    converted = {
+        family: json.loads(json.dumps(body).replace(DAY, target))
+        for family, body in docs.items()
+    }
+    tdnet = converted["tdnet"]
+    template = tdnet["items"][0]
+    remaining = (1179 if variant == "short_count" else 1180) - len(actual_pdfs)
+    tdnet["items"] = [
+        {
+            **template,
+            "pdf_url": f"https://www.release.tdnet.info/inbs/fixture-{i}.pdf",
+        }
+        for i in range(remaining)
+    ]
+    for code, doc_id in actual_pdfs:
+        tdnet["items"].append(
+            {
+                **template,
+                "security_code": code,
+                "pdf_url": f"https://www.release.tdnet.info/inbs/{doc_id}.pdf",
+            }
+        )
+    tdnet["total_count"] = len(tdnet["items"])
+    if variant == "missing_pdf":
+        tdnet["items"][-1]["pdf_url"] = f"{tdnet['items'][-1]['pdf_url']}.missing"
+    if variant == "wrong_issuer":
+        tdnet["items"][-1]["security_code"] = "12340"
+
+    converted["intent"]["semantic_digests"] = {
+        family: corrections.semantic_digest(family, converted[family])
+        for family in PATHS
+    }
+    pages = 11 if variant == "short_pages" else 12
+    release.update(
+        reason=(
+            "premature_empty_day"
+            if variant == "wrong_reason"
+            else "historical_pagination_gap"
+        ),
+        target_date=target,
+        documents={family: digest(body) for family, body in converted.items()},
+        source={
+            "page_sha256": [f"{i:064x}" for i in range(pages)],
+            "page_count": pages,
+            "disclosure_count": tdnet["total_count"],
+            "fetched_at": "2026-11-17T00:01:00Z",
+        },
+    )
+    revision = digest(release)
+    index["revisions"][target] = revision
+    objects[corrections.INDEX_KEY] = encoded(index)
+    objects[f"{corrections.PREFIX}/releases/{revision}.json"] = encoded(release)
+    for body in converted.values():
+        objects[f"{corrections.PREFIX}/documents/{digest(body)}.json"] = encoded(body)
+
+    for family, endpoint in PATHS.items():
+        path = f"{endpoint}/{target}"
+        cache._day_cache[path.lstrip("/")] = {
+            **converted[family],
+            "total_count": 0,
+            "items": [],
+        }
+        response = client.get(path)
+        assert response.headers["cache-control"] == "no-store"
+        if variant == "valid":
+            assert response.status_code == 200
+            assert response.json() == converted[family]
+            version = client.get(response.headers["content-location"])
+            assert version.status_code == 200
+            assert version.json() == converted[family]
+            assert "immutable" in version.headers["cache-control"]
+        else:
+            assert response.status_code == 503

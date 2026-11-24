@@ -25,6 +25,15 @@ FAMILIES = {"tdnet", "events", "router", "intent"}
 _VERIFIED_BODY_LIMIT = 32 * 1024 * 1024
 _verified_bodies = LRUCache(maxsize=_VERIFIED_BODY_LIMIT, getsizeof=len)
 _SHA = re.compile(r"[0-9a-f]{64}")
+_NOV12 = "2026-11-12"
+_PAGINATION_GAP_DAYS = {_NOV12, "2026-11-13"}
+_NOV12_REQUIRED_PDFS = {
+    ("39790", "140120261111574498.pdf"),
+    ("44840", "140120261111573095.pdf"),
+    ("63300", "140120261110571395.pdf"),
+    ("75670", "140120261111574580.pdf"),
+    ("75670", "140120261111574574.pdf"),
+}
 
 
 def unavailable():
@@ -212,8 +221,12 @@ async def _release(revision, day):
         or release["target_date"] != day
         or (
             release["reason"] != "premature_empty_day"
-            and (day, release["reason"]) != ("2026-11-13", "historical_pagination_gap")
+            and (
+                release["reason"] != "historical_pagination_gap"
+                or day not in _PAGINATION_GAP_DAYS
+            )
         )
+        or (day == _NOV12 and release["reason"] != "historical_pagination_gap")
     ):
         raise ValueError("release binding mismatch")
     for key in ("supersedes", "documents"):
@@ -231,6 +244,10 @@ async def _release(revision, day):
         or source["disclosure_count"] <= 0
     ):
         raise ValueError("release evidence invalid")
+    if day == _NOV12 and (
+        source["page_count"] != 12 or source["disclosure_count"] != 1180
+    ):
+        raise ValueError("November 12 pagination evidence mismatch")
     if not isinstance(source["fetched_at"], str):
         raise ValueError("collection timestamp invalid")
     fetched = datetime.fromisoformat(source["fetched_at"].replace("Z", "+00:00"))
@@ -250,6 +267,12 @@ async def _release(revision, day):
         documents[family] = document
     if documents["tdnet"]["total_count"] != source["disclosure_count"]:
         raise ValueError("release disclosure count mismatch")
+    if day == _NOV12 and not _NOV12_REQUIRED_PDFS <= {
+        (item["security_code"], item["pdf_url"].rsplit("/", 1)[-1])
+        for item in documents["tdnet"]["items"]
+        if item["has_pdf"]
+    }:
+        raise ValueError("November 12 required disclosures missing")
     if documents["intent"]["semantic_digests"] != {
         family: semantic_digest(family, documents[family])
         for family in ("tdnet", "events", "router")
