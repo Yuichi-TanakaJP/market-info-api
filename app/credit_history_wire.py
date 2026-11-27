@@ -11,7 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 PREFIX = "credit-inventory/history/v1"
-MAX_ARTIFACT_BYTES = 8 * 1024 * 1024
+MAX_ARTIFACT_BYTES = 48 * 1024 * 1024
 MAX_MANIFEST_BYTES = 256 * 1024
 MAX_ENTRIES = 480
 
