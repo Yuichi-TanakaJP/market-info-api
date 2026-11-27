@@ -719,7 +719,7 @@ or target selection occurs in this API.
 
 | Family | Update unit | HTTP/cache | Input/read bounds |
 | --- | --- | --- | --- |
-| private credit history | immutable broker-month + generation manifest; mutable manifest pointer | private,no-store; no retained monthly cache | 20 codes,367 inclusive days,100 rows/256KiB per page; 8MiB per monthly object; one month loaded per page |
+| private credit history | immutable broker-month + generation manifest; mutable manifest pointer | private,no-store; no retained monthly cache | 20 codes,367 inclusive days,100 rows/256KiB per page; 48MiB per monthly object; one month loaded per page, bounded by its declared size |
 
 Wire authority is `app/credit_history_wire.py`, mirrored from the producer's
 `schemas/credit_inventory_history.py`. Fixture

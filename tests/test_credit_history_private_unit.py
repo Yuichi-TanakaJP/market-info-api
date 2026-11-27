@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import copy
 import json
+import threading
 from pathlib import Path
 
 import pytest
@@ -14,6 +16,34 @@ from app.credit_history_wire import PREFIX, canonical, digest
 from app.routers import credit_history as router
 
 FIXTURE = Path(__file__).parent / "fixtures/credit_inventory_daily_builder_shape.json"
+
+
+def test_cancelled_read_waits_for_blocking_worker(monkeypatch):
+    started = threading.Event()
+    release = threading.Event()
+
+    def read_sync(key, limit):
+        started.set()
+        assert release.wait(5)
+        return b"value"
+
+    async def exercise():
+        task = asyncio.create_task(credit_history_storage.read_bytes("fixture", 8))
+        try:
+            assert await asyncio.to_thread(started.wait, 5)
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+        finally:
+            release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    monkeypatch.setattr(credit_history_storage, "_read_sync", read_sync)
+    asyncio.run(exercise())
 
 
 def build_objects(payloads):

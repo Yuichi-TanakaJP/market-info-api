@@ -19,7 +19,6 @@ from pydantic import Field
 from app import config, credit_history_storage
 from app.credit_history_wire import (
     PREFIX,
-    MAX_ARTIFACT_BYTES,
     MAX_MANIFEST_BYTES,
     DailyArtifact,
     Manifest,
@@ -196,7 +195,7 @@ async def _page(broker, codes, start, end, cursor):
     if not available:
         return result
     entry = available[month_index]
-    body = await credit_history_storage.read_bytes(entry.key, MAX_ARTIFACT_BYTES)
+    body = await credit_history_storage.read_bytes(entry.key, entry.bytes)
     if len(body) != entry.bytes or digest(body) != entry.sha256:
         raise ValueError("artifact integrity mismatch")
     artifact = DailyArtifact.model_validate_json(body)

@@ -43,4 +43,18 @@ def _read_sync(key: str, limit: int) -> bytes:
 
 
 async def read_bytes(key: str, limit: int) -> bytes:
-    return await asyncio.to_thread(partial(_read_sync, key, limit))
+    worker = asyncio.create_task(asyncio.to_thread(partial(_read_sync, key, limit)))
+    try:
+        return await asyncio.shield(worker)
+    except asyncio.CancelledError:
+        # Keep the route's semaphore until the actual blocking read exits.
+        while not worker.done():
+            try:
+                await asyncio.shield(worker)
+            except asyncio.CancelledError:
+                continue
+            except Exception:
+                break
+        if not worker.cancelled():
+            worker.exception()
+        raise
