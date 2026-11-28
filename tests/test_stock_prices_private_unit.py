@@ -290,6 +290,8 @@ async def test_region_must_match_r2_signing_contract(storage, monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("body", "status"), [
     (b"<Error><Code>NoSuchKey</Code><Code>AccessDenied</Code></Error>", 404),
+    (b"<Error><Code>NoSuchKey</Code><Error><Code>AccessDenied</Code></Error></Error>", 404),
+    (b'<Error><Code>NoSuchKey</Code><x:Code xmlns:x="urn:test">AccessDenied</x:Code></Error>', 404),
     (b"<Error><Code><Nested/>NoSuchKey</Code></Error>", 404),
     (b'["' + b"[" * 32_001 + b'"]', 200),
 ])

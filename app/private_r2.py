@@ -120,8 +120,14 @@ async def _read_stock_prices(client: httpx.AsyncClient, request: AWSRequest) -> 
         if response.status_code == 404:
             body = await _bounded_stock_prices_body(response, _STOCK_PRICES_ERROR_MAX_BYTES)
             failure = ElementTree.fromstring(body)
-            error_codes = failure.findall("Code")
-            if failure.tag == "Error" and len(error_codes) == 1:
+            error_codes = [
+                node for node in failure.iter() if node.tag.rsplit("}", 1)[-1] == "Code"
+            ]
+            if (
+                failure.tag == "Error"
+                and len(error_codes) == 1
+                and failure.find("Code") is error_codes[0]
+            ):
                 code = error_codes[0]
                 if code.text == "NoSuchKey" and not code.attrib and len(code) == 0:
                     raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
