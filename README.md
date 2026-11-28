@@ -52,6 +52,7 @@ market_info が生成した JSON を mini-tools に提供する薄い API レイ
 | `GET /yutai/launch-display/latest` | 優待ローンチ表示用データ（Bearer 認証必須・Private R2） |
 | `GET /yutai/launch-display/manifest` | 優待ローンチ表示用 manifest（Bearer 認証必須・Private R2） |
 | `GET /yutai/launch-display/monthly/{year_month}` | 指定月の優待ローンチ表示用データ（Bearer 認証必須・Private R2） |
+| `GET /stock-prices/latest`, `GET /stock-prices/{trading_date}` | 統合株価（専用 Bearer 認証・Private R2） |
 | `GET /yutai/stock-prices/latest` | 優待向け最新株価（Bearer 認証必須・Private R2） |
 | `GET /stock-master/latest` | 銘柄マスター（最新） |
 | `GET /reference/jpx-listed-companies/latest` | JPX上場銘柄の正規化済み最新スナップショット |
@@ -139,6 +140,8 @@ python -m piptools compile --strip-extras --extra dev pyproject.toml --output-fi
 |--------|------|------|
 | `R2_PUBLIC_BASE_URL` | 必須 | Cloudflare R2 のパブリック URL（末尾スラッシュなし） |
 | `MARKET_INFO_API_KEY` | 任意 | 将来の全体認証用予約値（現在は未使用） |
+| `STOCK_PRICES_API_KEY` | 統合株価 API 使用時は必須 | 所有者のサーバー間認証用 Bearer token |
+| `STOCK_PRICES_PRIVATE_{BUCKET,ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY,REGION}` | 同上（region は `auto` 固定） | 統合株価専用の Private R2 読み取り設定 |
 | `YUTAI_STOCK_PRICES_API_KEY` | 優待 private API 使用時は必須 | mini-tools サーバーとの Bearer 認証キー |
 | `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | 同上 | 優待 private JSON を保存した Private R2 bucket |
 | `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | 同上 | R2 S3 API endpoint |

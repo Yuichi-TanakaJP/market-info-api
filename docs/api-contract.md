@@ -92,6 +92,7 @@ API が正常時はローカル JSON を使わないこと（stale データ混�
 | `/nikko/credit` | 不定期 | 銘柄追加・除外時 |
 | `/yutai/manifest`, `/yutai/monthly/*` | 月次 | 月初に publish |
 | `/yutai/launch-display/*` | 月次・随時 | Private R2 の launch-display JSON を返す。サーバー cache は6時間 |
+| `/stock-prices/latest`, `/stock-prices/{trading_date}` | 価格ソース反映時 | 毎回 Private R2 から取得。日付指定も同日に更新される |
 | `/yutai/stock-prices/latest` | 日次 | Private R2 の latest を返す。サーバー cache は30秒 |
 | `/stock-master/latest` | publish 時 | 銘柄マスター生成・publish 時。latest-only reference |
 | `/market-rankings/market-cap/*` | 月次 | 月初に publish |
@@ -474,6 +475,15 @@ API は分析計算を行わず、`investor-flow-analysis/latest.json` または
 
 ## 認証
 
+### 統合株価
+
+`/stock-prices/latest` と `/stock-prices/{trading_date}` はサーバー間の専用
+`STOCK_PRICES_API_KEY` を要求し、既存の公開・優待用キーでは認証しない。
+Private R2 の `stock-prices/latest.json` と `stock-prices/daily/YYYY-MM-DD.json` から、
+取引日、版、銘柄コードと円建て株価だけを返す。内部の出典・取得状態を返さない。
+日付と内容の一致を検証し、リクエストごとに保存先を読む。
+対象コードの欠損は空配列、対象スナップショットの欠損は404、取得エラーは502とする。
+
 ### 現状
 
 既存の公開 endpoint は認証なし。Cloud Run 自体は公開アクセスを許可している。
@@ -588,6 +598,7 @@ TTL はデータの**可変性**によって 2 種類に分ける。TTL はサ�
 | `/disclosure-events/{date}` | `public, max-age=31536000, immutable` | 日付別artifactはpublish後に変更しない |
 | `/disclosure-events/manifest` | `public, max-age=300` | 新しい日付の追加を5分以内に確認する |
 | `/disclosure-events/latest` | `public, max-age=300` | 次回publishで参照先内容が変わる |
+| `/stock-prices/latest`, `/stock-prices/{trading_date}` | `private, no-store` | 統合株価の日次版と最新データをキャッシュしない |
 | `/yutai/stock-prices/latest` | `private, no-store` | Premium向け株価をブラウザー/CDNへ保存させない |
 | `/yutai/launch-display/*` | `private, no-store` | Premium向け優待条件・計算用データをブラウザー/CDNへ保存させない |
 
