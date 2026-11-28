@@ -77,6 +77,8 @@ class StockPriceStorageNotConfigured(RuntimeError):
 
 _STOCK_PRICES_MAX_BYTES = 4 * 1024 * 1024
 _STOCK_PRICES_ERROR_MAX_BYTES = 8 * 1024
+_STOCK_PRICES_CONTAINER_LIMIT = 32_000
+_STOCK_PRICES_SEPARATOR_LIMIT = 200_000
 _STOCK_PRICES_DEADLINE = 15
 _STOCK_PRICES_READ_SLOTS = threading.BoundedSemaphore(4)
 _STOCK_PRICES_R2_ENDPOINT = re.compile(
@@ -89,12 +91,16 @@ def _stock_price_request(key: str) -> AWSRequest:
     endpoint = config.STOCK_PRICES_PRIVATE_ENDPOINT
     access_key = config.STOCK_PRICES_PRIVATE_ACCESS_KEY_ID
     secret_key = config.STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY
-    if not all((bucket, access_key, secret_key)) or not _STOCK_PRICES_R2_ENDPOINT.fullmatch(endpoint):
+    if (
+        not all((bucket, access_key, secret_key))
+        or not _STOCK_PRICES_R2_ENDPOINT.fullmatch(endpoint)
+        or config.STOCK_PRICES_PRIVATE_REGION != "auto"
+    ):
         raise StockPriceStorageNotConfigured
     url = f"{endpoint.rstrip('/')}/{quote(bucket, safe='')}/{quote(key, safe='/')}"
     request = AWSRequest(method="GET", url=url, headers={"Accept-Encoding": "identity"})
     credentials = Credentials(access_key, secret_key)
-    S3SigV4Auth(credentials, "s3", config.STOCK_PRICES_PRIVATE_REGION).add_auth(request)
+    S3SigV4Auth(credentials, "s3", "auto").add_auth(request)
     return request
 
 
@@ -114,8 +120,11 @@ async def _read_stock_prices(client: httpx.AsyncClient, request: AWSRequest) -> 
         if response.status_code == 404:
             body = await _bounded_stock_prices_body(response, _STOCK_PRICES_ERROR_MAX_BYTES)
             failure = ElementTree.fromstring(body)
-            if failure.tag == "Error" and failure.findtext("Code") == "NoSuchKey":
-                raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
+            error_codes = failure.findall("Code")
+            if failure.tag == "Error" and len(error_codes) == 1:
+                code = error_codes[0]
+                if code.text == "NoSuchKey" and not code.attrib and len(code) == 0:
+                    raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
         if response.status_code != 200:
             raise ValueError("unexpected private R2 response status")
         count = response.headers.get("Content-Length")
@@ -127,6 +136,11 @@ async def _read_stock_prices(client: httpx.AsyncClient, request: AWSRequest) -> 
         body = await _bounded_stock_prices_body(response, length)
         if len(body) != length:
             raise ValueError("invalid stock-price object length")
+        # Price artifacts have flat records and small provenance objects.
+        # Count structural delimiters before allocating parsed containers.
+        count = body.count(b"{") + body.count(b"[")
+        if count > _STOCK_PRICES_CONTAINER_LIMIT or body.count(b",") > _STOCK_PRICES_SEPARATOR_LIMIT:
+            raise ValueError("private stock-price object exceeds structure limits")
         return json.loads(
             body.decode("utf-8"),
             object_pairs_hook=_unique_stock_price_json,

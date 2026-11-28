@@ -278,3 +278,44 @@ def test_missing_private_storage_is_503(api):
     response = client.get("/stock-prices/latest", headers=_AUTH)
     assert response.status_code == 503
     assert response.headers["Cache-Control"] == _NO_STORE
+
+@pytest.mark.asyncio
+async def test_region_must_match_r2_signing_contract(storage, monkeypatch):
+    private_r2, _ = storage
+    monkeypatch.setattr("app.config.STOCK_PRICES_PRIVATE_REGION", "us-east-1")
+    with pytest.raises(private_r2.StockPriceStorageNotConfigured):
+        await private_r2.fetch_stock_prices_json("stock-prices/latest.json")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("body", "status"), [
+    (b"<Error><Code>NoSuchKey</Code><Code>AccessDenied</Code></Error>", 404),
+    (b"<Error><Code><Nested/>NoSuchKey</Code></Error>", 404),
+    (b'["' + b"[" * 32_001 + b'"]', 200),
+])
+async def test_dense_structures_and_ambiguous_missing_codes_fail_closed(
+    storage, monkeypatch, body, status,
+):
+    private_r2, _ = storage
+
+    async def handle(_request):
+        return httpx.Response(
+            status, headers={"Content-Length": str(len(body))}, stream=_ByteStream(body),
+        )
+
+    _mock_transport(monkeypatch, private_r2, handle)
+    with pytest.raises(ValueError):
+        await private_r2.fetch_stock_prices_json("stock-prices/latest.json")
+
+
+def test_snapshot_length_limit_precedes_record_validation(artifact):
+    from pydantic import ValidationError
+
+    from app.routers.stock_prices import StockPrices
+
+    artifact["records"] = [{}] * 10_001
+    with pytest.raises(ValidationError) as exc_info:
+        StockPrices.model_validate(artifact)
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] == "too_long"

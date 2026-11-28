@@ -16,6 +16,7 @@ router = APIRouter(prefix=ROUTE_PREFIX, tags=["private-stock-prices"])
 _bearer = HTTPBearer(auto_error=False)
 _CODE = r"^[0-9][0-9A-Z]{3,4}$"
 _ISO_DAY = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+_MAX_RECORDS = 10_000
 
 
 async def require_key(
@@ -39,7 +40,7 @@ class StockPrices(BaseModel):
     schema_version: Literal[1]
     trading_date: str = Field(pattern=_ISO_DAY)
     revision: int = Field(strict=True, ge=1)
-    records: list[StockPrice] = Field(min_length=1)
+    records: list[StockPrice] = Field(min_length=1, max_length=_MAX_RECORDS)
 
     @field_validator("schema_version", mode="before")
     @classmethod
@@ -92,7 +93,7 @@ async def _read_snapshot(key: str, code: str | None, expected_date: str | None =
 
 class StockPricesResponse(StockPrices):
     # A code lookup can match no record in an otherwise valid snapshot.
-    records: list[StockPrice]
+    records: list[StockPrice] = Field(max_length=_MAX_RECORDS)
 
 
 @router.get(

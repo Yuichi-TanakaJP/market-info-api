@@ -141,7 +141,7 @@ python -m piptools compile --strip-extras --extra dev pyproject.toml --output-fi
 | `R2_PUBLIC_BASE_URL` | 必須 | Cloudflare R2 のパブリック URL（末尾スラッシュなし） |
 | `MARKET_INFO_API_KEY` | 任意 | 将来の全体認証用予約値（現在は未使用） |
 | `STOCK_PRICES_API_KEY` | 統合株価 API 使用時は必須 | 所有者のサーバー間認証用 Bearer token |
-| `STOCK_PRICES_PRIVATE_{BUCKET,ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY,REGION}` | 同上（region は既定 `auto`） | 統合株価専用の Private R2 読み取り設定 |
+| `STOCK_PRICES_PRIVATE_{BUCKET,ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY,REGION}` | 同上（region は `auto` 固定） | 統合株価専用の Private R2 読み取り設定 |
 | `YUTAI_STOCK_PRICES_API_KEY` | 優待 private API 使用時は必須 | mini-tools サーバーとの Bearer 認証キー |
 | `YUTAI_STOCK_PRICES_PRIVATE_BUCKET` | 同上 | 優待 private JSON を保存した Private R2 bucket |
 | `YUTAI_STOCK_PRICES_PRIVATE_ENDPOINT` | 同上 | R2 S3 API endpoint |
