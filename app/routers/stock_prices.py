@@ -76,7 +76,7 @@ async def _read_snapshot(key: str, code: str | None, expected_date: str | None =
         if expected_date is not None and snapshot.trading_date != expected_date:
             raise ValueError("private snapshot date mismatch")
     except ClientError as exc:
-        if exc.response.get("Error", {}).get("Code") in {"NoSuchKey", "NotFound"}:
+        if exc.response.get("Error", {}).get("Code") == "NoSuchKey":
             raise HTTPException(404, "stock price snapshot not found") from None
         raise HTTPException(502, "private stock prices unavailable") from None
     except private_r2.StockPriceStorageNotConfigured:

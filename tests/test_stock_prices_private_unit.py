@@ -1,4 +1,6 @@
+import asyncio
 from copy import deepcopy
+import threading
 import io
 import json
 from pathlib import Path
@@ -102,6 +104,7 @@ def test_invalid_artifacts_cannot_become_empty_or_stale_success(api, artifact, c
 
 @pytest.mark.parametrize(("error", "status"), [
     ("NoSuchKey", 404),
+    ("NotFound", 502),
     ("NoSuchBucket", 502),
     ("AccessDenied", 502),
 ])
@@ -121,7 +124,7 @@ def test_private_storage_is_scoped_and_closes_response(monkeypatch, artifact):
 
     values = {
         "STOCK_PRICES_PRIVATE_BUCKET": "test-private-bucket",
-        "STOCK_PRICES_PRIVATE_ENDPOINT": "https://private-r2.example.invalid",
+        "STOCK_PRICES_PRIVATE_ENDPOINT": f"https://{'a' * 32}.r2.cloudflarestorage.com",
         "STOCK_PRICES_PRIVATE_ACCESS_KEY_ID": "test-access",
         "STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY": "test-secret",
         "STOCK_PRICES_PRIVATE_REGION": "auto",
@@ -138,8 +141,18 @@ def test_private_storage_is_scoped_and_closes_response(monkeypatch, artifact):
     assert private_r2._stock_prices_json_sync("stock-prices/latest.json") == artifact
     client.get_object.assert_called_once_with(Bucket="test-private-bucket", Key="stock-prices/latest.json")
     assert build.call_args.kwargs["endpoint_url"] == values["STOCK_PRICES_PRIVATE_ENDPOINT"]
+    assert build.call_args.kwargs["verify"] is True
+    assert build.call_args.kwargs["config"].s3 == {"addressing_style": "path"}
     assert stream.closed
     client.close.assert_called_once()
+
+    monkeypatch.setattr(
+        config, "STOCK_PRICES_PRIVATE_ENDPOINT", values["STOCK_PRICES_PRIVATE_ENDPOINT"].replace("https://", "http://")
+    )
+    build.reset_mock()
+    with pytest.raises(private_r2.StockPriceStorageNotConfigured):
+        private_r2._stock_prices_json_sync("stock-prices/latest.json")
+    build.assert_not_called()
 
     monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_BUCKET", "")
     build.reset_mock()
@@ -169,8 +182,9 @@ def test_private_storage_rejects_oversize_mismatched_or_ambiguous_json(
 
     from app import config, private_r2
 
-    for suffix in ("BUCKET", "ENDPOINT", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY"):
+    for suffix in ("BUCKET", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY"):
         monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_" + suffix, "test")
+    monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_ENDPOINT", f"https://{'a' * 32}.r2.cloudflarestorage.com")
     stream = io.BytesIO(body)
     client = Mock()
     client.get_object.return_value = {
@@ -182,3 +196,39 @@ def test_private_storage_rejects_oversize_mismatched_or_ambiguous_json(
         private_r2._stock_prices_json_sync("stock-prices/latest.json")
     assert stream.closed
     client.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_cancelled_request_keeps_private_read_slot_until_worker_exits(monkeypatch):
+    from app import private_r2
+
+    monkeypatch.setattr(private_r2, "_STOCK_PRICES_READ_SLOTS", threading.BoundedSemaphore(1))
+    work_started = threading.Event()
+    finish_work = threading.Event()
+
+    def read(_key):
+        work_started.set()
+        if not finish_work.wait(2):
+            raise AssertionError("worker was never released")
+        return {"records": []}
+
+    monkeypatch.setattr(private_r2, "_stock_prices_json_sync", read)
+    pending = asyncio.create_task(private_r2.fetch_stock_prices_json("key"))
+    try:
+        assert await asyncio.to_thread(work_started.wait, 1)
+        pending.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await pending
+        with pytest.raises(RuntimeError, match="reader is busy"):
+            await private_r2.fetch_stock_prices_json("key")
+    finally:
+        finish_work.set()
+    # The worker releases capacity even though nobody awaits the first request.
+    for _ in range(100):
+        try:
+            assert await private_r2.fetch_stock_prices_json("key") == {"records": []}
+            break
+        except RuntimeError:
+            await asyncio.sleep(0.01)
+    else:
+        pytest.fail("private read slot was not released")
