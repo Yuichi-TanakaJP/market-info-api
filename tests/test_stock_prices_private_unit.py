@@ -1,10 +1,11 @@
 import asyncio
 from copy import deepcopy
 import threading
-import io
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
+
+import httpx
 
 from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
@@ -117,48 +118,156 @@ def test_upstream_errors_have_no_sensitive_details(api, error, status):
     assert "internal marker" not in response.text
 
 
-def test_private_storage_is_scoped_and_closes_response(monkeypatch, artifact):
-    import boto3
-
+@pytest.fixture
+def storage(monkeypatch):
     from app import config, private_r2
 
+    endpoint = f"https://{'a' * 32}.r2.cloudflarestorage.com"
     values = {
         "STOCK_PRICES_PRIVATE_BUCKET": "test-private-bucket",
-        "STOCK_PRICES_PRIVATE_ENDPOINT": f"https://{'a' * 32}.r2.cloudflarestorage.com",
+        "STOCK_PRICES_PRIVATE_ENDPOINT": endpoint,
         "STOCK_PRICES_PRIVATE_ACCESS_KEY_ID": "test-access",
         "STOCK_PRICES_PRIVATE_SECRET_ACCESS_KEY": "test-secret",
         "STOCK_PRICES_PRIVATE_REGION": "auto",
     }
     for name, value in values.items():
         monkeypatch.setattr(config, name, value)
+    return private_r2, endpoint
+
+
+class _ByteStream(httpx.AsyncByteStream):
+    def __init__(self, data, *, wait=False):
+        self.data = data
+        self.closed = False
+        self.wait = wait
+
+    async def __aiter__(self):
+        if self.wait:
+            await asyncio.sleep(1)
+        yield self.data
+
+    async def aclose(self):
+        self.closed = True
+
+
+def _mock_transport(monkeypatch, private_r2, handler):
+    client_cls = httpx.AsyncClient
+    factory = Mock(side_effect=lambda **kwargs: client_cls(
+        transport=httpx.MockTransport(handler), **kwargs,
+    ))
+    monkeypatch.setattr(private_r2.httpx, "AsyncClient", factory)
+    return factory
+
+
+@pytest.mark.asyncio
+async def test_r2_read_signs_scoped_request_and_closes_response(storage, artifact, monkeypatch):
+    private_r2, endpoint = storage
     raw = json.dumps(artifact).encode()
-    stream = io.BytesIO(raw)
-    client = Mock()
-    client.get_object.return_value = {"Body": stream, "ContentLength": len(raw)}
-    build = Mock(return_value=client)
-    monkeypatch.setattr(boto3, "client", build)
+    stream = _ByteStream(raw)
+    seen = []
 
-    assert private_r2._stock_prices_json_sync("stock-prices/latest.json") == artifact
-    client.get_object.assert_called_once_with(Bucket="test-private-bucket", Key="stock-prices/latest.json")
-    assert build.call_args.kwargs["endpoint_url"] == values["STOCK_PRICES_PRIVATE_ENDPOINT"]
-    assert build.call_args.kwargs["verify"] is True
-    assert build.call_args.kwargs["config"].s3 == {"addressing_style": "path"}
-    assert stream.closed
-    client.close.assert_called_once()
+    async def handle(request):
+        seen.append(request)
+        return httpx.Response(200, headers={"Content-Length": str(len(raw))}, stream=stream)
 
-    monkeypatch.setattr(
-        config, "STOCK_PRICES_PRIVATE_ENDPOINT", values["STOCK_PRICES_PRIVATE_ENDPOINT"].replace("https://", "http://")
+    factory = _mock_transport(monkeypatch, private_r2, handle)
+    assert await private_r2.fetch_stock_prices_json("stock-prices/latest.json") == artifact
+    assert str(seen[0].url) == f"{endpoint}/test-private-bucket/stock-prices/latest.json"
+    assert seen[0].headers["Authorization"].startswith(
+        "AWS4-HMAC-SHA256 Credential=test-access/"
     )
-    build.reset_mock()
-    with pytest.raises(private_r2.StockPriceStorageNotConfigured):
-        private_r2._stock_prices_json_sync("stock-prices/latest.json")
-    build.assert_not_called()
+    assert seen[0].headers["Accept-Encoding"] == "identity"
+    assert factory.call_args.kwargs["verify"] is True
+    assert factory.call_args.kwargs["follow_redirects"] is False
+    assert factory.call_args.kwargs["trust_env"] is False
+    assert stream.closed
 
-    monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_BUCKET", "")
-    build.reset_mock()
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", [
+    "", f"http://{'a' * 32}.r2.cloudflarestorage.com", "https://r2.example.invalid",
+    f"https://{'a' * 32}.r2.cloudflarestorage.com/user",
+])
+async def test_configuration_rejects_untrusted_endpoints(storage, endpoint, monkeypatch):
+    private_r2, _ = storage
+    monkeypatch.setattr("app.config.STOCK_PRICES_PRIVATE_ENDPOINT", endpoint)
+    factory = Mock()
+    monkeypatch.setattr(private_r2.httpx, "AsyncClient", factory)
     with pytest.raises(private_r2.StockPriceStorageNotConfigured):
-        private_r2._stock_prices_json_sync("stock-prices/latest.json")
-    build.assert_not_called()
+        await private_r2.fetch_stock_prices_json("stock-prices/latest.json")
+    factory.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("body", "declared"), [
+    (b"{}", 4 * 1024 * 1024 + 1),
+    (b"{}", 1),
+    (b'{"schema_version":1,"schema_version":2}', None),
+    (b'{"records":[{"code":"1234","price_jpy":175}],"sources":{"value":NaN}}', None),
+])
+async def test_r2_read_rejects_oversize_mismatched_or_invalid_json(
+    storage, monkeypatch, body, declared,
+):
+    private_r2, _ = storage
+    stream = _ByteStream(body)
+
+    async def handle(_request):
+        length = len(body) if declared is None else declared
+        return httpx.Response(200, headers={"Content-Length": str(length)}, stream=stream)
+
+    _mock_transport(monkeypatch, private_r2, handle)
+    with pytest.raises(ValueError):
+        await private_r2.fetch_stock_prices_json("stock-prices/latest.json")
+    assert stream.closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("code", "exception"), [
+    ("NoSuchKey", ClientError), ("NotFound", ValueError), ("NoSuchBucket", ValueError),
+])
+async def test_only_r2_xml_no_such_key_reports_known_missing_object(
+    storage, monkeypatch, code, exception,
+):
+    private_r2, _ = storage
+    stream = _ByteStream(f"<Error><Code>{code}</Code></Error>".encode())
+
+    async def handle(_request):
+        return httpx.Response(404, stream=stream)
+
+    _mock_transport(monkeypatch, private_r2, handle)
+    with pytest.raises(exception):
+        await private_r2.fetch_stock_prices_json("stock-prices/latest.json")
+    assert stream.closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("slow", ["headers", "error_body"])
+async def test_deadline_covers_headers_and_error_bodies_and_releases_capacity(
+    storage, monkeypatch, slow,
+):
+    private_r2, _ = storage
+    monkeypatch.setattr(private_r2, "_STOCK_PRICES_READ_SLOTS", threading.BoundedSemaphore(1))
+    monkeypatch.setattr(private_r2, "_STOCK_PRICES_DEADLINE", 0.04)
+    stream = _ByteStream(b"<Error />", wait=True)
+    started = asyncio.Event()
+
+    async def handle(_request):
+        started.set()
+        if slow == "headers":
+            await asyncio.sleep(1)
+        return httpx.Response(404, stream=stream)
+
+    _mock_transport(monkeypatch, private_r2, handle)
+    pending = asyncio.create_task(private_r2.fetch_stock_prices_json("key"))
+    await started.wait()
+    with pytest.raises(RuntimeError, match="reader is busy"):
+        await private_r2.fetch_stock_prices_json("key")
+    with pytest.raises(TimeoutError):
+        await pending
+    if slow == "error_body":
+        assert stream.closed
+    assert private_r2._STOCK_PRICES_READ_SLOTS.acquire(blocking=False)
+    private_r2._STOCK_PRICES_READ_SLOTS.release()
 
 
 def test_missing_private_storage_is_503(api):
@@ -169,66 +278,3 @@ def test_missing_private_storage_is_503(api):
     response = client.get("/stock-prices/latest", headers=_AUTH)
     assert response.status_code == 503
     assert response.headers["Cache-Control"] == _NO_STORE
-
-@pytest.mark.parametrize(("body", "declared"), [
-    (b"{}", 4 * 1024 * 1024 + 1),
-    (b"{}", 1),
-    (b'{"schema_version":1,"schema_version":2}', None),
-])
-def test_private_storage_rejects_oversize_mismatched_or_ambiguous_json(
-    monkeypatch, body, declared,
-):
-    import boto3
-
-    from app import config, private_r2
-
-    for suffix in ("BUCKET", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY"):
-        monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_" + suffix, "test")
-    monkeypatch.setattr(config, "STOCK_PRICES_PRIVATE_ENDPOINT", f"https://{'a' * 32}.r2.cloudflarestorage.com")
-    stream = io.BytesIO(body)
-    client = Mock()
-    client.get_object.return_value = {
-        "Body": stream,
-        "ContentLength": len(body) if declared is None else declared,
-    }
-    monkeypatch.setattr(boto3, "client", lambda *args, **kwargs: client)
-    with pytest.raises(ValueError):
-        private_r2._stock_prices_json_sync("stock-prices/latest.json")
-    assert stream.closed
-    client.close.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cancelled_request_keeps_private_read_slot_until_worker_exits(monkeypatch):
-    from app import private_r2
-
-    monkeypatch.setattr(private_r2, "_STOCK_PRICES_READ_SLOTS", threading.BoundedSemaphore(1))
-    work_started = threading.Event()
-    finish_work = threading.Event()
-
-    def read(_key):
-        work_started.set()
-        if not finish_work.wait(2):
-            raise AssertionError("worker was never released")
-        return {"records": []}
-
-    monkeypatch.setattr(private_r2, "_stock_prices_json_sync", read)
-    pending = asyncio.create_task(private_r2.fetch_stock_prices_json("key"))
-    try:
-        assert await asyncio.to_thread(work_started.wait, 1)
-        pending.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await pending
-        with pytest.raises(RuntimeError, match="reader is busy"):
-            await private_r2.fetch_stock_prices_json("key")
-    finally:
-        finish_work.set()
-    # The worker releases capacity even though nobody awaits the first request.
-    for _ in range(100):
-        try:
-            assert await private_r2.fetch_stock_prices_json("key") == {"records": []}
-            break
-        except RuntimeError:
-            await asyncio.sleep(0.01)
-    else:
-        pytest.fail("private read slot was not released")
