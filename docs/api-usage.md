@@ -1164,3 +1164,27 @@ curl -H "Authorization: Bearer ${EDINET_FINANCIAL_API_KEY}" \
 ~~~
 
 200はProducerの期間統合済みcompact JSONをそのまま返す。主な項目は schema_version、doc_id、filing_period_start、filing_period_end、fact_count、facts、type1_source_zip_sha256。X-Content-SHA256はレスポンスの生バイトに対応する。銘柄や会計年度から版を探す索引が必要な場合は、別途保存・配信契約を整備する。
+
+## 統合株価（所有者向け）
+
+サーバーから専用の `STOCK_PRICES_API_KEY` を Bearer token として送ります。`code` は省略できます。
+日付指定はその取引日の現行版を返します。同日中に更新されるため、どちらも `private, no-store` です。
+
+```sh
+curl -H "Authorization: Bearer $STOCK_PRICES_API_KEY" \
+  "http://localhost:8000/stock-prices/latest?code=1234"
+curl -H "Authorization: Bearer $STOCK_PRICES_API_KEY" \
+  "http://localhost:8000/stock-prices/2026-11-27?code=1234"
+```
+
+```json
+{
+  "schema_version": 1,
+  "trading_date": "2026-11-27",
+  "revision": 2,
+  "records": [{"code": "1234", "price_jpy": 175.5}]
+}
+```
+
+`records: []` は保存済みスナップショットに指定コードが見つからない場合です。
+404 はスナップショット未保存、502 は取得失敗または内容不正、503 はサーバー設定不足です。

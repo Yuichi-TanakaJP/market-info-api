@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "trading_date": "2026-11-27",
+  "revision": 2,
+  "records": [
+    {"code": "1234", "price_jpy": 175.5, "internal_source": "yahoo_finance"},
+    {"code": "567A", "price_jpy": 628}
+  ],
+  "sources": {
+    "yahoo_finance": {"records": [{"code": "1234", "price_jpy": 175.5}]},
+    "naito_ranking": {"records": [{"code": "567A", "price_jpy": 628}]}
+  }
+}

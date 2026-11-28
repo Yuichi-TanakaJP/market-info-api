@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from app import r2
+from app import cache, r2
 from app.tdnet_cache_policy import TDNET_HTTP_CACHE_CONTROL, TDNET_MUTABLE_API_PATHS
 
 
@@ -29,6 +29,7 @@ from app.routers import (
     ranking_enriched,
     sbi,
     stock_master,
+    stock_prices,
     tdnet,
     tdnet_router_events,
     theme_references,
@@ -98,6 +99,7 @@ app = FastAPI(
         "| `/yutai/launch-display/manifest` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/launch-display/monthly/{year_month}` | 月次 | 可変（6時間・private） |\n"
         "| `/yutai/stock-prices/latest` | 日次 | 可変（30秒・private） |\n"
+        "| `/stock-prices/latest`, `/stock-prices/{trading_date}` | ソース反映時 | Private R2から毎回取得（no-store） |\n"
         "| `/stock-master/latest` | publish 時 | 可変（6時間） |\n"
         "| `/reference/jpx-listed-companies/latest`, `/manifest` | 月次publish時 | 可変（6時間） |\n"
         "| `/reference/jpx-listed-companies/{date}` | 月次publish時 | 不変（24時間） |\n"
@@ -121,6 +123,8 @@ async def observation_cache_headers(request, call_next):
     response = await call_next(request)
     if request.url.path in {"/private/yutai/comparisons", "/private/yutai/normalized"} or request.url.path.startswith(("/private/credit-inventory/", "/private/tdnet/dividend-sources/", "/private/tdnet/source-originals/", "/private/edinet/financials/", "/private/yutai/comparisons/", "/private/yutai/normalized/")):
         response.headers["Cache-Control"] = "private, no-store"
+    if request.url.path.startswith(stock_prices.ROUTE_PREFIX + "/"):
+        response.headers["Cache-Control"] = cache.PRIVATE_HTTP_CACHE_CONTROL
     parts = request.url.path.strip("/").split("/")
     if len(parts) == 2 and parts[0] in {"ranking", "topix33", "nikkei"}:
         response.headers["Cache-Control"] = "no-store"
@@ -144,6 +148,7 @@ app.include_router(yutai.router)
 app.include_router(yutai_launch_display.router)
 app.include_router(yutai_stock_prices.router)
 app.include_router(stock_master.router)
+app.include_router(stock_prices.router)
 app.include_router(market_rankings.router)
 app.include_router(us_ranking.router)
 app.include_router(edinet.router)
